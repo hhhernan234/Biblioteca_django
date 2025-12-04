@@ -1,0 +1,11 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<h2>PRESTAMO</h2>
+
+<ul> {% for prestamo in prestamos %}
+    <li> {{ prestamo.libro}} {{prestamo.usuario}} {{prestamo.fecha_prestamos}} {{prestamo.fecha_max}} {{prestamo.fecha_devolucion}}
+    </li>
+{% endfor %}
+</ul>
+{% endblock %}

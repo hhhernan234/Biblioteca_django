@@ -56,7 +56,7 @@ class Multa(models.Model):
     def save(self, *args, **kwargs):
         if self.tipo == 'r' and self.monto == 0:
             self.monto = monto =self.prestamo.multa_retraso
-        super().save(*args **kwargs)
+        super().save(*args, **kwargs)
 
     
 

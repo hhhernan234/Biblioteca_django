@@ -1,0 +1,11 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<h2>LIBROS</h2>
+
+<ul> {% for libro in libros %}
+    <li> {{ libro.titulo}} {{libro.autor}} {{libros.disponible}}
+    </li>
+{% endfor %}
+</ul>
+{% endblock %}
