@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sistema de Biblioteca</title>
+
+    <!-- Bootstrap -->
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
+        rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+        .tarjeta {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- MENÚ SUPERIOR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+
+            <a class="navbar-brand" href="#">Biblioteca</a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu_principal">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menu_principal">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                    <li class="nav-item">
+                        <a class="nav-link seccion_boton" data-seccion="seccion_libros" href="#">Libros</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link seccion_boton" data-seccion="seccion_autores" href="#">Autores</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link seccion_boton" data-seccion="seccion_prestamos" href="#">Préstamos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link seccion_boton" data-seccion="seccion_multas" href="#">Multas</a>
+                    </li>
+
+                </ul>
+            </div>
+
+        </div>
+    </nav>
+
+
+
+    {%block contenido%}
+
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="bg-light text-center mt-5 p-3">
+        <span>Sistema de Biblioteca - Gestión Completa</span>
+    </footer>
+
+
+
+    <!-- Bootstrap JS -->
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    <script>
+        // ---------------- CAMBIO DE SECCIONES ----------------
+        const botones = document.querySelectorAll(".seccion_boton");
+        const secciones = document.querySelectorAll(".seccion_contenido");
+
+        botones.forEach(boton => {
+            boton.addEventListener("click", () => {
+                const id = boton.getAttribute("data-seccion");
+
+                secciones.forEach(sec => sec.classList.add("d-none"));
+                document.getElementById(id).classList.remove("d-none");
+            });
+        });
+    </script>
+
+</body>
+</html>
+
+{%endblock%}

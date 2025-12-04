@@ -1,0 +1,129 @@
+{% extends "index.html" %}
+
+{% block titulo %}Página Principal{% endblock titulo %}
+
+{% block contenido %}
+ <!-- CONTENIDO CENTRAL -->
+    <div class="container mt-4">
+
+        <!-- ===================== SECCIÓN LIBROS ===================== -->
+        <div id="seccion_libros" class="seccion_contenido d-none">
+            <div class="card tarjeta shadow">
+                <div class="card-body">
+
+                    <h4 class="mb-3">Gestión de Libros</h4>
+
+                    <button class="btn btn-primary mb-3">Registrar Libro</button>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Autor</th>
+                                    <th>Categoría</th>
+                                    <th>Disponibilidad</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_libros"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- ===================== SECCIÓN AUTORES ===================== -->
+        <div id="seccion_autores" class="seccion_contenido d-none">
+            <div class="card tarjeta shadow">
+                <div class="card-body">
+
+                    <h4 class="mb-3">Gestión de Autores</h4>
+
+                    <button class="btn btn-primary mb-3">Registrar Autor</button>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nombre del autor</th>
+                                    <th>Nacionalidad</th>
+                                    <th>Número de obras</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_autores"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- ===================== SECCIÓN PRÉSTAMOS ===================== -->
+        <div id="seccion_prestamos" class="seccion_contenido d-none">
+            <div class="card tarjeta shadow">
+                <div class="card-body">
+
+                    <h4 class="mb-3">Gestión de Préstamos</h4>
+
+                    <button class="btn btn-primary mb-3">Registrar Préstamo</button>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Lector</th>
+                                    <th>Libro</th>
+                                    <th>Fecha de inicio</th>
+                                    <th>Fecha de devolución</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_prestamos"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- ===================== SECCIÓN MULTAS ===================== -->
+        <div id="seccion_multas" class="seccion_contenido d-none">
+            <div class="card tarjeta shadow">
+                <div class="card-body">
+
+                    <h4 class="mb-3">Gestión de Multas</h4>
+
+                    <button class="btn btn-danger mb-3">Registrar Multa</button>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Lector</th>
+                                    <th>Motivo</th>
+                                    <th>Monto</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla_multas"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock contenido %}
