@@ -3,9 +3,14 @@
 {% block contenido %}
 <h2>AUTORES</h2>
 
+<a href="{% url 'crear_autor' %}">Crear Nuevo Autor</a>
+
 <ul> {% for autor in autores %}
     <li> {{ autor.nombre}} {{autor.apellido}} {{autor.bibliografia }}
     </li>
+    <td>
+        <a href="{% url 'editar_autor' autor.id %}" >Editar</a>
+    </td>
 {% endfor %}
 </ul>
 {% endblock %}
