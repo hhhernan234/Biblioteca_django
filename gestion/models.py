@@ -41,7 +41,8 @@ class Prestamo(models.Model):
         hoy= timezone.now().date()
         fecha_ref = self.fecha_devolucion or hoy
         if fecha_ref > self.fecha_max:
-            return(fecha_ref - self.fecha_devolucion).days
+            return(fecha_ref - self.fecha_max).days
+        return 0
     
     @property
     def multa_retraso(self):

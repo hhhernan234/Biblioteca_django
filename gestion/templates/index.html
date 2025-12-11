@@ -12,10 +12,111 @@
 
     <style>
         body {
-            background-color: #f4f6f9;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link {
+            color: #4a5568 !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 1rem !important;
+        }
+
+        .nav-link:hover {
+            color: #667eea !important;
+            transform: translateY(-2px);
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-link:hover::after {
+            width: 80%;
+        }
+
+        .btn-cerrar-sesion {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-cerrar-sesion:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .content-wrapper {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1200px;
+        }
+
+        footer {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-top: 2px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        footer span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        .navbar-toggler {
+            border: 2px solid #667eea;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23667eea' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
         .tarjeta {
-            border-radius: 10px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .tarjeta:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
     </style>
 </head>
@@ -23,10 +124,10 @@
 <body>
 
     <!-- MENÚ SUPERIOR -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container-fluid">
 
-            <a class="navbar-brand" href="#">Biblioteca</a>
+            <a class="navbar-brand" href="#">📚 Biblioteca</a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu_principal">
                 <span class="navbar-toggler-icon"></span>
@@ -48,25 +149,23 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link seccion_boton" data-seccion="{% url 'lista_multas'%}" href="#">Multas</a>
+                        <a class="nav-link seccion_boton" href="{% url 'lista_multas' %}">Multas</a>
                     </li>
 
                     {% if not user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login'%}" ><i class= "bi bi-arrow-left-right"></i>Ingresar</a>
+                        <a class="nav-link" href="{% url 'login'%}"><i class="bi bi-arrow-left-right"></i>Ingresar</a>
                     </li>
                     {% endif %}
 
                     {% if user.is_authenticated %}
-                    <form method ='post' action="{% url 'logout' %}">
-                        {% csrf_token %}
-                    <li class="nav-item">
-                        <button type="submit">Cerrar sesion</button>
+                    <li class="nav-item ms-2">
+                        <form method="post" action="{% url 'logout' %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-cerrar-sesion">Cerrar sesión</button>
+                        </form>
                     </li>
-                    </form>
                     {% endif %}
-
-
 
                 </ul>
             </div>
@@ -74,18 +173,15 @@
         </div>
     </nav>
 
-
-
-    {%block contenido%}
-    {%endblock%}
-
+    <div class="content-wrapper">
+        {%block contenido%}
+        {%endblock%}
+    </div>
 
     <!-- PIE DE PÁGINA -->
-    <footer class="bg-light text-center mt-5 p-3">
+    <footer class="text-center mt-5 p-4">
         <span>Sistema de Biblioteca - Gestión Completa</span>
     </footer>
-
-
 
     <!-- Bootstrap JS -->
     <script 
@@ -109,4 +205,3 @@
 
 </body>
 </html>
-

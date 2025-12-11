@@ -1,11 +1,181 @@
 {% extends "index.html" %}
 {% block contenido %}
-<h2> Registro de Usuario </h2>
+<div class="container">
+    <div class="form-wrapper">
+        <div class="form-header">
+            <h2>Registro de Usuario</h2>
+            <p class="subtitle">Complete los datos para crear su cuenta</p>
+        </div>
 
-<form method='POST'>
-{{ form.non_field_errors }}
-    {% csrf_token %}
-    {{form.as_div}}
-    <button type="=submit">Crear</button>
-</form>
+        <form method="POST" class="registration-form">
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {% csrf_token %}
+            
+            <div class="form-fields">
+                {{ form.as_div }}
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <span>Crear Cuenta</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .form-wrapper {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .form-header h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+
+    .subtitle {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 0.95rem;
+    }
+
+    .registration-form {
+        padding: 2rem;
+    }
+
+    .alert-error {
+        background-color: #fee;
+        border: 1px solid #fcc;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1.5rem;
+        color: #c33;
+        font-size: 0.9rem;
+    }
+
+    .form-fields {
+        margin-bottom: 1.5rem;
+    }
+
+    /* Estilos para los campos del formulario generados por Django */
+    .form-fields > div {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-fields label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .form-fields input,
+    .form-fields select,
+    .form-fields textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e1e8ed;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-fields input:focus,
+    .form-fields select:focus,
+    .form-fields textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-fields .helptext {
+        display: block;
+        margin-top: 0.35rem;
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .form-fields .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .form-fields .errorlist li {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-actions {
+        margin-top: 1.5rem;
+    }
+
+    .btn-primary {
+        width: 100%;
+        padding: 0.875rem 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.35);
+    }
+
+    .btn-primary:active {
+        transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+        .container {
+            margin: 1rem auto;
+        }
+
+        .form-header {
+            padding: 1.5rem;
+        }
+
+        .form-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .registration-form {
+            padding: 1.5rem;
+        }
+    }
+</style>
 {% endblock %}

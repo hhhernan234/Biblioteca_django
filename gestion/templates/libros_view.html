@@ -1,0 +1,26 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<h2>LIBROS</h2>
+
+<ul> {% for libro in libros %}
+    <li> {{ libro.titulo}} {{libro.autor}} {{libros.disponible}}
+    </li>
+{% endfor %}
+</ul>
+
+{% if is_paginated %}
+<div class ='pagination'>
+    {% if page_obj.has_previous %}
+    <a href ="?page=1">Primera</a>
+    <a href ="?page={{ page_obj.previous_page_number }}">Anterior</a>
+    {% endif %}
+    <span> {{page_obj.number}} de {{ page_obj.paginator.num_pages}}</span>
+
+    {% if page_obj.has_next %}
+    <a href ="?page={{ page_obj.next_page_number }}">siguiente</a>
+    <a href ="?page={{ page_obj.paginator.num_pages }}">Ultima</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

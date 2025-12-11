@@ -1,16 +1,134 @@
 {% extends "index.html" %}
 
 {% block contenido %}
-<h2>AUTORES</h2>
+<div class="autores-container">
+    <div class="header">
+        <h2>Autores</h2>
+        <a href="{% url 'crear_autor' %}" class="btn-nuevo">+ Nuevo Autor</a>
+    </div>
 
-<a href="{% url 'crear_autor' %}">Crear Nuevo Autor</a>
+    <div class="autores-lista">
+        {% for autor in autores %}
+        <div class="autor-card">
+            <div class="autor-info">
+                <h3>{{ autor.nombre }} {{ autor.apellido }}</h3>
+                <p>{{ autor.bibliografia }}</p>
+            </div>
+            <a href="{% url 'editar_autor' autor.id %}" class="btn-editar">Editar</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 
-<ul> {% for autor in autores %}
-    <li> {{ autor.nombre}} {{autor.apellido}} {{autor.bibliografia }}
-    </li>
-    <td>
-        <a href="{% url 'editar_autor' autor.id %}" >Editar</a>
-    </td>
-{% endfor %}
-</ul>
+<style>
+    .autores-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .header h2 {
+        margin: 0;
+        color: #333;
+    }
+
+    .btn-nuevo {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-nuevo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.35);
+    }
+
+    .autores-lista {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .autor-card {
+        background: white;
+        border: 1px solid #e1e8ed;
+        border-radius: 8px;
+        padding: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: box-shadow 0.3s;
+    }
+
+    .autor-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .autor-info {
+        flex: 1;
+    }
+
+    .autor-info h3 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+        font-size: 1.1rem;
+    }
+
+    .autor-info p {
+        margin: 0;
+        color: #666;
+        font-size: 0.95rem;
+    }
+
+    .btn-editar {
+        background: #f8f9fa;
+        color: #667eea;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: 500;
+        border: 1px solid #e1e8ed;
+        transition: all 0.3s;
+    }
+
+    .btn-editar:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+    }
+
+    @media (max-width: 600px) {
+        .header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+
+        .btn-nuevo {
+            text-align: center;
+        }
+
+        .autor-card {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 1rem;
+        }
+
+        .btn-editar {
+            text-align: center;
+        }
+    }
+</style>
 {% endblock %}
