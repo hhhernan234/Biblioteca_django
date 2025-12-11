@@ -51,6 +51,23 @@
                         <a class="nav-link seccion_boton" data-seccion="{% url 'lista_multas'%}" href="#">Multas</a>
                     </li>
 
+                    {% if not user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login'%}" ><i class= "bi bi-arrow-left-right"></i>Ingresar</a>
+                    </li>
+                    {% endif %}
+
+                    {% if user.is_authenticated %}
+                    <form method ='post' action="{% url 'logout' %}">
+                        {% csrf_token %}
+                    <li class="nav-item">
+                        <button type="submit">Cerrar sesion</button>
+                    </li>
+                    </form>
+                    {% endif %}
+
+
+
                 </ul>
             </div>
 

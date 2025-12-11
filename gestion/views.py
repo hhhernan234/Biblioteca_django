@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 from .models import Autor, Libro, Prestamo, Multa
+from django.http import HttpResponseForbidden
+
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
 
 def index(request):
     title = settings.TITLE
@@ -27,7 +31,8 @@ def crear_libro(request):
 def lista_autores(request):
     autores = Autor.objects.all()
     return render(request,'gestion/templates/autores.html', {'autores': autores} )
-    
+
+@login_required    
 def crear_autor(request, id=None):
     if id == None:
         autor= None
@@ -58,29 +63,32 @@ def lista_prestamos(request):
     return render(request,'gestion/templates/prestamos.html', {'prestamos': prestamos} )
 
 def crear_prestamo(request):
+    if not request.user.has_perm('gestion.gestionar_prestamos'):
+        return HttpResponseForbidden()
     libro = Libro.objects.filter(disponible=True)
     usuario = User.objects.all()
     if request.method == 'POST':
-        libro_id= request.method.POST.get('libro')
-        usuario_id = request.method.POST.get('usuario')
-        fecha_prestamo = request.method.POST.get('fecha_maxima')
+        libro_id= request.POST.get('libro')
+        usuario_id = request.POST.get('usuario')
+        fecha_prestamo = request.POST.get('fecha_max')
         if libro_id and usuario_id and fecha_prestamo:
             libro = get_object_or_404(Libro, id= libro_id)
             usuario = get_object_or_404(User, id= usuario_id)
             prestamo = Prestamo.objects.create(libro= libro,
                                                usuario= usuario,
-                                               fecha_prestamo= fecha_prestamo)
+                                               fecha_max= fecha_prestamo)
             libro.disponible = False
             libro.save()
             return redirect('detalle_prestamo', id= prestamo.id)
     fecha = (timezone.now().date()).isoformat()
     return render (request, 'gestion/templates/crear_prestamo.html', {'libros':libro,
-                                                                     'usuario':usuario,
+                                                                     'usuarios':usuario,
                                                                      'fecha': fecha})
         
 
-def detalle_prestamo(request):
-    pass
+def detalle_prestamo(request, id):
+    prestamo = get_object_or_404(Prestamo, id=id)
+    return render(request, 'gestion/templates/detalle_prestamo.html', {'prestamo': prestamo})
 
 def lista_multas(request):
     multas = Multa.objects.all()
@@ -89,27 +97,16 @@ def lista_multas(request):
 def crear_multa(request):
     pass
 
-
-
-
-# Create your views here.
-def crear_editar_autor(request, id=None):
-    autor = get_object_or_404(Autor, id=id) if id else None
-    
+def registro(request):
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        apellido = request.POST.get('apellido')
-        bibliografia = request.POST.get('bibliografia')
-        
-        if nombre and apellido:
-            if autor:  # Editar
-                autor.nombre = nombre
-                autor.apellido = apellido
-                autor.bibliografia = bibliografia
-                autor.save()
-            else:  # Crear
-                Autor.objects.create(nombre=nombre, apellido=apellido, bibliografia=bibliografia)
-            return redirect('lista_autores')
-    
-    template = 'gestion/templates/editar_autores.html' if autor else 'gestion/templates/crear_autores.html'
-    return render(request, template, {'autor': autor})
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            usuario = form.save()
+            login(request, usuario)
+            return redirect('index')
+    else:
+        form = UserCreationForm()
+    return render (request, 'gestion/templates/registration/registro.html', {'form': form})
+
+
+

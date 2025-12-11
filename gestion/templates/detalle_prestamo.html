@@ -1,0 +1,23 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<h2>Detalle del Préstamo #{{ prestamo.id }}</h2>
+
+<div>
+    <p><strong>Libro:</strong> {{ prestamo.libro.titulo }}</p>
+    <p><strong>Autor:</strong> {{ prestamo.libro.autor }}</p>
+    <p><strong>Usuario:</strong> {{ prestamo.usuario.username }}</p>
+    <p><strong>Fecha de Préstamo:</strong> {{ prestamo.fecha_prestamos }}</p>
+    <p><strong>Fecha Máxima de Devolución:</strong> {{ prestamo.fecha_max }}</p>
+    
+    {% if prestamo.fecha_devolucion %}
+        <p><strong>Fecha de Devolución:</strong> {{ prestamo.fecha_devolucion }}</p>
+        <p><strong>Estado:</strong> Devuelto</p>
+    {% else %}
+        <p><strong>Estado:</strong> Prestado (Pendiente de devolución)</p>
+    {% endif %}
+    
+    <br>
+    <a href="{% url 'lista_prestamos' %}">Volver a Lista de Préstamos</a>
+</div>
+{% endblock %}

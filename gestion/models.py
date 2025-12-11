@@ -26,6 +26,12 @@ class Prestamo(models.Model):
     fecha_prestamos = models.DateField(default=timezone.now)
     fecha_max = models.DateField()
     fecha_devolucion= models.DateField(blank=True, null=True)
+
+    class Meta:
+        permissions = (
+            ("Ver_prestamos", "Puede ver prestaamos"),
+            ("gestionar_prestamos", "Puede gestionar_prestamos"),
+        )
     
     def __str__(self):
         return f"prestamo de{self.libro} {self.usuario}"
