@@ -1,36 +1,95 @@
 from django.test import TestCase
-from gestion.models import Autor, Libro, Prestamo
+from gestion.models import Autor, Libro, Prestamo, Editorial
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
+
+class EditorialModelTest(TestCase):
+    def setUp(self):
+        self.editorial = Editorial.objects.create(
+            nombre="Penguin Random House",
+            pais="Estados Unidos",
+            ciudad="Nueva York"
+        )
+
+    def test_editorial_str(self):
+        self.assertEqual(str(self.editorial), "Penguin Random House")
+
+    def test_editorial_campos(self):
+        self.assertEqual(self.editorial.pais, "Estados Unidos")
+        self.assertEqual(self.editorial.ciudad, "Nueva York")
+
 class LibroModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        autor = Autor.objects.create(nombre="Isaac", apellido="Asimov", bibliografia="Cualquier dato")
-        Libro.objects.create(titulo="Fundacion", autor= autor, disponible=True)
+        editorial = Editorial.objects.create(nombre="Editorial Prueba")
+        autor = Autor.objects.create(nombre="Isaac", apellido="Asimov", bibliografia="Escritor de ciencia ficción")
+        Libro.objects.create(titulo="Fundacion", 
+            autor= autor, 
+            editorial=editorial,
+            isbn="9780553293357",
+            paginas=255,
+            costo=25.50,
+            ejemplares=3,
+            disponible=True
+        )
 
     def test_str_devuelve_titulo(self):
         libro = Libro.objects.get(id=1)
         self.assertEqual(str(libro), 'Fundacion')
 
+    def test_libro_tiene_isbn(self):
+        libro = Libro.objects.get(id=1)
+        self.assertEqual(libro.isbn, "9780553293357")
+
+    def test_libro_tiene_costo(self):
+        libro = Libro.objects.get(id=1)
+        self.assertEqual(float(libro.costo), 25.50)
+
+    def test_ejemplares_disponibles_sin_prestamos(self):
+        libro = Libro.objects.get(id=1)
+        self.assertEqual(libro.ejemplares_disponibles, 3)
+
+    def test_ejemplares_disponibles_con_prestamo(self):
+        libro = Libro.objects.get(id=1)
+        usuario = User.objects.create(username='juan', password='#123Uyqwe')
+        Prestamo.objects.create(
+            libro=libro,
+            usuario=usuario,
+            fecha_max=timezone.now().date() + timezone.timedelta(days=2),
+            estado='p'  # Prestado
+        )
+        # Refrescar para obtener el cálculo actualizado
+        libro = Libro.objects.get(id=1)
+        self.assertEqual(libro.ejemplares_disponibles, 2)
+
 class PrestamoModelTest(TestCase):
     @classmethod
     def setUpTestData(cls):
+        editorial = Editorial.objects.create(nombre="Editorial Test")
         autor = Autor.objects.create(nombre="Isaac", apellido="Asimov", bibliografia="Cualquier dato")
         usuario= User.objects.create(username='juan', password='#123Uyqwe')
         libro= Libro.objects.create(titulo="I Robot", autor_id= 1, disponible=False)
         cls.prestamo= Prestamo.objects.create(
             libro=libro,
             usuario=usuario,
-            fecha_max= "2025-12-10"
+            fecha_max=timezone.now().date() - timezone.timedelta(days=8),
+            estado='p'
         )
 
     def test_libro_no_disponible(self):
         self.prestamo.refresh_from_db()
         self.assertFalse(self.prestamo.libro.disponible)
+
+    def test_dias_retraso(self):
         self.assertEqual(self.prestamo.dias_retraso, 8)
+
+    def test_multa_retraso(self):
         if self.prestamo.dias_retraso > 0:
             self.assertGreater(self.prestamo.multa_retraso, 0)
+
+    def test_estado_prestamo(self):
+        self.assertEqual(self.prestamo.estado, 'p')
 
 class PrestamoUsuarioViewTest(TestCase):
     def setUp(self):
