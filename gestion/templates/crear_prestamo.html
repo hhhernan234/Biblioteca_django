@@ -13,12 +13,12 @@
     </select></br>
 
     <label for="id_usuario" name="autor">Usuario: </label>
-    <select type="text" id="id_usuario" name="usuario" required><br/>
-        <option value="" >Seleccionar usuario</option>
-        {% for usuario in usuarios %}
-            <option value = "{{usuario.id}}">{{usuario.username}}</option>
+    <select type="text" id="id_usuario_biblioteca" name="usuario_biblioteca" required>
+        <option value="">Seleccionar usuario de biblioteca</option>
+        {% for usuario in usuarios_biblioteca %}
+        <option value="{{usuario.id}}">{{usuario.nombre}} {{usuario.apellido}} ({{usuario.cedula}})</option>
         {% endfor %}
-    </select></br>
+    </select>
     <label for="id_fecha_prestamo" name="fecha_prestamo">Fecha_Prestamo: </label>
     <input type="date" id="id_fecha_prestamo" name="fecha_max"  value = "{{fecha}}"required><br/>
 

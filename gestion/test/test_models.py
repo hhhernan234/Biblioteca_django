@@ -3,6 +3,7 @@ from gestion.models import Autor, Libro, Prestamo, Editorial
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
+from gestion.models import UsuarioBiblioteca, validar_cedula_ecuatoriana
 
 class EditorialModelTest(TestCase):
     def setUp(self):
@@ -106,6 +107,29 @@ class PrestamoUsuarioViewTest(TestCase):
         respl = self.client.get(reverse('crear_autor'))
         self.assertEqual(respl.status_code, 200)
 
+class ValidadorCedulaTest(TestCase):
+    def test_cedula_valida(self):
+        try:
+            validar_cedula_ecuatoriana('1714567890')
+        except ValidationError:
+            self.fail("Cédula válida fue rechazada")
+    
+    def test_cedula_invalida(self):
+        with self.assertRaises(ValidationError):
+            validar_cedula_ecuatoriana('123456789')  # 9 dígitos
+        
+        with self.assertRaises(ValidationError):
+            validar_cedula_ecuatoriana('171456789A')  # Con letra
+
+class UsuarioBibliotecaTest(TestCase):
+    def test_crear_usuario(self):
+        usuario = UsuarioBiblioteca.objects.create(
+            nombre="Juan Pérez",
+            cedula="1714567890",
+            email="juan@test.com",
+            tipo="estudiante"
+        )
+        self.assertEqual(str(usuario), "Juan Pérez (1714567890)")
 
 
         

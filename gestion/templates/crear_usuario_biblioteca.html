@@ -1,0 +1,61 @@
+{% extends "index.html" %}
+{% block contenido %}
+<div style="max-width: 500px; margin: 2rem auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; text-align: center;">
+        <h2 style="margin: 0;">Nuevo Usuario</h2>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div style="padding: 1rem; margin: 1rem; background: #f8d7da; color: #721c24; border-radius: 6px;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" style="padding: 2rem;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Nombre:</label>
+            <input type="text" name="nombre" required 
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Cédula:</label>
+            <input type="text" name="cedula" maxlength="10" pattern="[0-9]{10}" required
+                   placeholder="Ej: 1714567890"
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; box-sizing: border-box;">
+            <small style="color: #666; font-size: 0.85rem;">10 dígitos sin guiones</small>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Email:</label>
+            <input type="email" name="email" required
+                   style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Tipo:</label>
+            <select name="tipo" required
+                    style="width: 100%; padding: 0.75rem; border: 2px solid #e1e8ed; border-radius: 8px; box-sizing: border-box;">
+                <option value="estudiante">Estudiante</option>
+                <option value="profesor">Profesor</option>
+                <option value="externo">Externo</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" 
+                    style="flex: 1; padding: 0.875rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                Crear Usuario
+            </button>
+            <a href="{% url 'lista_usuarios_biblioteca' %}" 
+               style="padding: 0.875rem 1.5rem; background: #f8f9fa; color: #667eea; border: 2px solid #e1e8ed; border-radius: 8px; text-decoration: none; font-weight: 600; text-align: center;">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

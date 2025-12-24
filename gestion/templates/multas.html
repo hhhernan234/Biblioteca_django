@@ -11,7 +11,13 @@
         {% for multa in multas %}
         <div class="multa-card {% if multa.pagada %}pagada{% endif %}">
             <div class="multa-info">
-                <h3>{{ multa.prestamo }}</h3>
+                <h3>📚 {{ multa.prestamo.libro.titulo }}
+                    {% if multa.prestamo.usuario_biblioteca %}
+                        - {{ multa.prestamo.usuario_biblioteca.nombre }}
+                    {% else %}
+                        - <span style="color: #dc3545;">Sin usuario asignado</span>
+                    {% endif %}
+                </h3>
                 <div class="detalles">
                     <span class="tipo tipo-{{ multa.tipo }}">
                         {% if multa.tipo == 'r' %}Retraso

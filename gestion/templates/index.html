@@ -145,11 +145,15 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link seccion_boton" data-seccion="seccion_prestamos" href="{% url 'lista_prestamos'%}">Préstamos</a>
+                        <a class="nav-link seccion_boton" href="{% url 'lista_multas' %}">Multas</a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link seccion_boton" href="{% url 'lista_multas' %}">Multas</a>
+                        <a class="nav-link" href="{% url 'lista_usuarios_biblioteca'%}">Usuarios</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link seccion_boton" data-seccion="seccion_prestamos" href="{% url 'lista_prestamos'%}">Préstamos</a>
                     </li>
 
                     {% if not user.is_authenticated %}

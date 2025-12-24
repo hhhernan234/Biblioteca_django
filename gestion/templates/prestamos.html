@@ -1,11 +1,49 @@
 {% extends "index.html" %}
 
 {% block contenido %}
-<h2>PRESTAMO</h2>
+<div class="container mt-4">
+    <h2>📚 Préstamos</h2>
 
-<ul> {% for prestamo in prestamos %}
-    <li> {{ prestamo.libro}} {{prestamo.usuario}} {{prestamo.fecha_prestamos}} {{prestamo.fecha_max}} {{prestamo.fecha_devolucion}}
-    </li>
-{% endfor %}
-</ul>
+    {% if prestamos %}
+    <div class="list-group mt-3">
+        {% for prestamo in prestamos %}
+        <div class="list-group-item">
+            <h5>{{ prestamo.libro.titulo }}</h5>
+            <p class="mb-1">
+                <strong>Usuario:</strong> 
+                {% if prestamo.usuario_biblioteca %}
+                    {{ prestamo.usuario_biblioteca.nombre }}
+                {% else %}
+                    <span class="text-danger">Sin usuario asignado</span>
+                {% endif %}
+            </p>
+            <p class="mb-1">
+                <strong>Fecha préstamo:</strong> {{ prestamo.fecha_prestamos|date:"d/m/Y" }}
+            </p>
+            <p class="mb-1">
+                <strong>Fecha máxima:</strong> {{ prestamo.fecha_max|date:"d/m/Y" }}
+            </p>
+            <p class="mb-1">
+                <strong>Fecha devolución:</strong> 
+                {% if prestamo.fecha_devolucion %}
+                    {{ prestamo.fecha_devolucion|date:"d/m/Y" }}
+                {% else %}
+                    <span class="text-warning">Pendiente</span>
+                {% endif %}
+            </p>
+            <p class="mb-0">
+                <strong>Estado:</strong> 
+                <span class="badge bg-{% if prestamo.estado == 'p' %}primary{% elif prestamo.estado == 'm' %}danger{% elif prestamo.estado == 'd' %}success{% else %}secondary{% endif %}">
+                    {{ prestamo.get_estado_display }}
+                </span>
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-3">
+        No hay préstamos registrados
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

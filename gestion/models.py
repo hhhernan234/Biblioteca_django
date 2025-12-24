@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-
+from django.core.exceptions import ValidationError
 # Create your models here.
 
 class Editorial(models.Model):
@@ -60,7 +60,8 @@ class Prestamo(models.Model):
     ]
 
     libro = models.ForeignKey(Libro, related_name ="prestamos", on_delete=models.PROTECT)
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, related_name= "prestamos", on_delete=models.PROTECT)
+    usuario_biblioteca = models.ForeignKey('UsuarioBiblioteca', related_name='prestamos', 
+                                       on_delete=models.PROTECT, null=True, blank=True)
     fecha_prestamos = models.DateField(default=timezone.now)
     fecha_max = models.DateField()
     fecha_devolucion= models.DateField(blank=True, null=True)
@@ -74,7 +75,8 @@ class Prestamo(models.Model):
         verbose_name_plural = "Préstamos"
     
     def __str__(self):
-        return f"prestamo de{self.libro} {self.usuario}"
+        usuario_nombre = self.usuario_biblioteca.nombre if self.usuario_biblioteca else "Sin usuario"
+        return f"{self.libro.titulo} - {usuario_nombre}"
     
     @property
     def dias_retraso(self):
@@ -115,5 +117,41 @@ class Multa(models.Model):
             self.monto = monto =self.prestamo.multa_retraso
         super().save(*args, **kwargs)
 
+    # ==================== VALIDADOR DE CÉDULA ====================
+def validar_cedula_ecuatoriana(cedula):
+    cedula = str(cedula).strip()
     
+    if not cedula.isdigit() or len(cedula) != 10:
+        raise ValidationError('Cédula inválida: debe tener 10 dígitos')
+    
+    provincia = int(cedula[0:2])
+    if provincia < 1 or provincia > 24:
+        raise ValidationError('Código de provincia inválido')
+    
+    # Algoritmo del dígito verificador
+    coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
+    suma = 0
+    for i in range(9):
+        producto = int(cedula[i]) * coeficientes[i]
+        suma += producto - 9 if producto >= 10 else producto
+    
+    digito = 0 if suma % 10 == 0 else 10 - (suma % 10)
+    
+    if digito != int(cedula[9]):
+        raise ValidationError('Cédula inválida')
+    
+    return True
 
+
+# ==================== USUARIO BIBLIOTECA ====================
+class UsuarioBiblioteca(models.Model):
+    TIPOS = [('estudiante', 'Estudiante'), ('profesor', 'Profesor'), ('externo', 'Externo')]
+    
+    nombre = models.CharField(max_length=100)
+    cedula = models.CharField(max_length=10, unique=True, validators=[validar_cedula_ecuatoriana])
+    email = models.EmailField()
+    tipo = models.CharField(max_length=20, choices=TIPOS, default='externo')
+    activo = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.cedula})"

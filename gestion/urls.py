@@ -34,4 +34,8 @@ urlpatterns = [
     path('multas/', lista_multas, name="lista_multas"),
     path('multas/nuevo/<int:id>', crear_multa, name="crear_multa"),
 
+    #usuarios
+    path('usuarios-biblioteca/', lista_usuarios_biblioteca, name="lista_usuarios_biblioteca"),
+    path('usuarios-biblioteca/nuevo/', crear_usuario_biblioteca, name="crear_usuario_biblioteca"),
+
 ]

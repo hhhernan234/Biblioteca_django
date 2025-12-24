@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
-from .models import Autor, Libro, Prestamo, Multa
+from .models import Autor, Libro, Prestamo, Multa, UsuarioBiblioteca
 from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User, Permission
 from django.contrib.auth.forms import UserCreationForm
@@ -11,6 +11,7 @@ from django.contrib.auth import login
 from django.views.generic import ListView, CreateView, UpdateView,DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
+from django.contrib import messages
 
 
 def index(request):
@@ -63,14 +64,14 @@ def crear_autor(request, id=None):
     return render(request, 'gestion/templates/crear_autores.html', context)
 
 def lista_prestamos(request):
-    prestamos = Prestamo.objects.all()
-    return render(request,'gestion/templates/prestamos.html', {'prestamos': prestamos} )
+    prestamos = Prestamo.objects.select_related('libro', 'usuario_biblioteca').all()
+    return render(request,'gestion/templates/prestamos.html', {'prestamos': prestamos})
 
 def crear_prestamo(request):
     if not request.user.has_perm('gestion.gestionar_prestamos'):
         return HttpResponseForbidden()
     libro = Libro.objects.filter(disponible=True)
-    usuario = User.objects.all()
+    usuarios_biblioteca = UsuarioBiblioteca.objects.filter(activo=True)
     if request.method == 'POST':
         libro_id= request.POST.get('libro')
         usuario_id = request.POST.get('usuario')
@@ -86,7 +87,7 @@ def crear_prestamo(request):
             return redirect('detalle_prestamo', id= prestamo.id)
     fecha = (timezone.now().date()).isoformat()
     return render (request, 'gestion/templates/crear_prestamo.html', {'libros':libro,
-                                                                     'usuarios':usuario,
+                                                                     'usuarios_biblioteca': usuarios_biblioteca,
                                                                      'fecha': fecha})
         
 
@@ -95,8 +96,11 @@ def detalle_prestamo(request, id):
     return render(request, 'gestion/templates/detalle_prestamo.html', {'prestamo': prestamo})
 
 def lista_multas(request):
-    multas = Multa.objects.all()
-    return render(request,'gestion/templates/multas.html', {'multas': multas} )
+    multas = Multa.objects.select_related(
+        'prestamo__libro',
+        'prestamo__usuario_biblioteca'
+    ).all()
+    return render(request,'gestion/templates/multas.html', {'multas': multas})
 
 def crear_multa(request):
     pass
@@ -149,3 +153,27 @@ class LibroDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     template_name = 'gestion/templates/delete_libros.html'
     success_url = reverse_lazy('libro_list')
     permission_required = 'gestion.delete_libro'
+
+# Agregar al final de views.py
+
+def lista_usuarios_biblioteca(request):
+    usuarios = UsuarioBiblioteca.objects.filter(activo=True)
+    return render(request, 'gestion/templates/usuarios_biblioteca.html', {'usuarios': usuarios})
+
+
+@login_required
+def crear_usuario_biblioteca(request):
+    if request.method == 'POST':
+        try:
+            UsuarioBiblioteca.objects.create(
+                nombre=request.POST.get('nombre'),
+                cedula=request.POST.get('cedula'),
+                email=request.POST.get('email'),
+                tipo=request.POST.get('tipo', 'externo')
+            )
+            messages.success(request, 'Usuario creado exitosamente')
+            return redirect('lista_usuarios_biblioteca')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+    
+    return render(request, 'gestion/templates/crear_usuario_biblioteca.html')

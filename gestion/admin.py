@@ -4,7 +4,15 @@ from .models import Libro
 from .models import Multa
 from .models import Prestamo
 from .models import Editorial
+from .models import UsuarioBiblioteca
+
 # Register your models here.
+
+@admin.register(UsuarioBiblioteca)
+class UsuarioBibliotecaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'cedula', 'tipo', 'email', 'activo']
+    search_fields = ['nombre', 'cedula']
+    list_filter = ['tipo', 'activo']
 
 @admin.register(Editorial)
 class EditorialAdmin(admin.ModelAdmin):
@@ -24,7 +32,7 @@ class LibroAdmin(admin.ModelAdmin):
 
 @admin.register(Prestamo)
 class PrestamoAdmin(admin.ModelAdmin):
-    list_display = ['libro', 'usuario', 'fecha_prestamos', 'fecha_max', 'estado']
+    list_display = ['libro', 'usuario_biblioteca', 'fecha_prestamos', 'fecha_max', 'estado']
     list_filter = ['estado', 'fecha_prestamos']
 
 @admin.register(Multa)
