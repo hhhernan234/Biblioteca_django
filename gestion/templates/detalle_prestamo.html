@@ -1,23 +1,139 @@
 {% extends "index.html" %}
 
 {% block contenido %}
-<h2>Detalle del Préstamo #{{ prestamo.id }}</h2>
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="card" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: none;">
+        <!-- Header -->
+        <div class="card-header text-white py-4" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 20px 20px 0 0;">
+            <h3 class="mb-0">📚 Detalle del Préstamo</h3>
+        </div>
+        
+        <div class="card-body p-4">
+            <!-- Información del Libro y Usuario -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="mb-3">📖 Libro</h5>
+                    <p class="mb-1"><strong>{{ prestamo.libro.titulo }}</strong></p>
+                    <p class="text-muted mb-0">✍️ {{ prestamo.libro.autor.nombre }} {{ prestamo.libro.autor.apellido }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-3">👤 Usuario</h5>
+                    {% if prestamo.usuario_biblioteca %}
+                    <p class="mb-1"><strong>{{ prestamo.usuario_biblioteca.nombre }}</strong></p>
+                    <p class="text-muted mb-0">📋 {{ prestamo.usuario_biblioteca.cedula }}</p>
+                    {% else %}
+                    <p class="text-danger">Sin usuario asignado</p>
+                    {% endif %}
+                </div>
+            </div>
 
-<div>
-    <p><strong>Libro:</strong> {{ prestamo.libro.titulo }}</p>
-    <p><strong>Autor:</strong> {{ prestamo.libro.autor }}</p>
-    <p><strong>Usuario:</strong> {{ prestamo.usuario.username }}</p>
-    <p><strong>Fecha de Préstamo:</strong> {{ prestamo.fecha_prestamos }}</p>
-    <p><strong>Fecha Máxima de Devolución:</strong> {{ prestamo.fecha_max }}</p>
-    
-    {% if prestamo.fecha_devolucion %}
-        <p><strong>Fecha de Devolución:</strong> {{ prestamo.fecha_devolucion }}</p>
-        <p><strong>Estado:</strong> Devuelto</p>
-    {% else %}
-        <p><strong>Estado:</strong> Prestado (Pendiente de devolución)</p>
-    {% endif %}
-    
-    <br>
-    <a href="{% url 'lista_prestamos' %}">Volver a Lista de Préstamos</a>
+            <!-- Fechas y Estado -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <p class="mb-1 text-muted">Fecha préstamo:</p>
+                    <p class="mb-0"><strong>{{ prestamo.fecha_prestamos|date:"d/m/Y" }}</strong></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1 text-muted">Fecha máxima:</p>
+                    <p class="mb-0"><strong>{{ prestamo.fecha_max|date:"d/m/Y" }}</strong></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1 text-muted">Estado:</p>
+                    <span class="badge 
+                        {% if prestamo.estado == 'b' %}bg-secondary
+                        {% elif prestamo.estado == 'p' %}bg-primary
+                        {% elif prestamo.estado == 'm' %}bg-danger
+                        {% else %}bg-success{% endif %}"
+                        style="font-size: 1rem; padding: 0.5rem 1rem;">
+                        {{ prestamo.get_estado_display }}
+                    </span>
+                </div>
+            </div>
+
+            {% if prestamo.fecha_devolucion %}
+            <div class="alert alert-success" style="border-radius: 10px;">
+                <strong>✅ Libro Devuelto</strong><br>
+                Fecha de devolución: {{ prestamo.fecha_devolucion|date:"d/m/Y" }}
+            </div>
+            {% endif %}
+
+            <!-- Botón de Devolver (solo si está prestado o multado) -->
+            {% if prestamo.estado in 'pm' and user.is_authenticated %}
+            <div class="d-grid mb-4">
+                <a href="{% url 'devolver_prestamo' prestamo.id %}" 
+                   class="btn btn-lg text-white"
+                   style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                          border: none;
+                          border-radius: 10px;
+                          padding: 0.75rem;
+                          font-weight: 600;
+                          box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                    📥 Devolver Libro
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Multas -->
+            {% if prestamo.multas.exists %}
+            <hr class="my-4">
+            <h5 class="mb-3">💰 Multas Aplicadas</h5>
+            
+            {% for multa in prestamo.multas.all %}
+            <div class="alert {% if multa.pagada %}alert-success{% else %}alert-warning{% endif %} d-flex justify-content-between align-items-center"
+                 style="border-radius: 10px;">
+                <div>
+                    <strong>
+                        {% if multa.tipo == 'r' %}🕐 Retraso
+                        {% elif multa.tipo == 'p' %}❌ Pérdida
+                        {% elif multa.tipo == 'd' %}⚠️ Deterioro
+                        {% endif %}
+                    </strong>
+                    <br>
+                    <small class="text-muted">{{ multa.fecha|date:"d/m/Y" }}</small>
+                </div>
+                <div class="text-end">
+                    <h5 class="mb-1">${{ multa.monto }}</h5>
+                    {% if multa.pagada %}
+                        <span class="badge bg-success">✓ Pagada</span>
+                    {% else %}
+                        <span class="badge bg-danger">Pendiente</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="text-end p-3" style="background: #f8f9fa; border-radius: 10px;">
+                <p class="mb-1 text-muted">Total de multas:</p>
+                <h4 class="mb-0" style="color: #667eea;">
+                    ${% widthratio prestamo.multas.all|length 1 0 as total %}
+                    {% for multa in prestamo.multas.all %}
+                        {% if forloop.first %}{{ multa.monto }}{% else %}{{ multa.monto|add:total }}{% endif %}
+                    {% endfor %}
+                </h4>
+            </div>
+            {% endif %}
+
+            <!-- Botón Volver -->
+            <div class="d-grid mt-4">
+                <a href="{% url 'lista_prestamos' %}" 
+                   class="btn btn-outline-secondary btn-lg"
+                   style="border-radius: 10px;">
+                    ← Volver a Lista de Préstamos
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+    .alert {
+        border: none;
+    }
+    
+    .card:hover {
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
 {% endblock %}

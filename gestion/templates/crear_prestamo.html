@@ -1,27 +1,76 @@
 {% extends "index.html" %}
-<!--Seccion de autores -->
+
 {% block contenido %}
-<h2>Crear Prestamo</h2>
-<form method="POST">
-    {% csrf_token %}
-    <label for="id_libro" name="libro">Libro: </label>
-    <select type="text" id="id_libro" name="libro" required><br/>
-        <option value="" >Seleccione libro</option>
-        {% for libro in libros %}
-            <option value = "{{libro.id}}">{{libro.titulo}}</option>
-        {% endfor %}
-    </select></br>
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="card" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: none;">
+        <div class="card-header text-white text-center py-4" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 20px 20px 0 0;">
+            <h3 class="mb-0">📚 Nuevo Préstamo</h3>
+        </div>
+        
+        <div class="card-body p-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
 
-    <label for="id_usuario" name="autor">Usuario: </label>
-    <select type="text" id="id_usuario_biblioteca" name="usuario_biblioteca" required>
-        <option value="">Seleccionar usuario de biblioteca</option>
-        {% for usuario in usuarios_biblioteca %}
-        <option value="{{usuario.id}}">{{usuario.nombre}} {{usuario.apellido}} ({{usuario.cedula}})</option>
-        {% endfor %}
-    </select>
-    <label for="id_fecha_prestamo" name="fecha_prestamo">Fecha_Prestamo: </label>
-    <input type="date" id="id_fecha_prestamo" name="fecha_max"  value = "{{fecha}}"required><br/>
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label for="libro" class="form-label fw-bold">📖 Libro</label>
+                    <select class="form-select" id="libro" name="libro" required
+                            style="border-radius: 10px; padding: 0.75rem;">
+                        <option value="">--Seleccione un libro--</option>
+                        {% for libro in libros %}
+                        <option value="{{ libro.id }}" 
+                                {% if libro.ejemplares_disponibles == 0 %}disabled{% endif %}>
+                            {{ libro.titulo }} 
+                            ({{ libro.ejemplares_disponibles }} disponible{{ libro.ejemplares_disponibles|pluralize:"s" }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-    <button type="submit"> Crear </button>
-</form>
+                <div class="mb-4">
+                    <label for="usuario_biblioteca" class="form-label fw-bold">👤 Usuario</label>
+                    <select class="form-select" id="usuario_biblioteca" name="usuario_biblioteca" required
+                            style="border-radius: 10px; padding: 0.75rem;">
+                        <option value="">--Seleccione un usuario--</option>
+                        {% for usuario in usuarios_biblioteca %}
+                        <option value="{{ usuario.id }}">
+                            {{ usuario.nombre }} ({{ usuario.cedula }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="alert alert-info" style="border-radius: 10px;">
+                    <small>
+                        ℹ️ El préstamo se generará automáticamente con fecha de devolución de <strong>2 días</strong> desde hoy.
+                    </small>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-lg text-white"
+                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                   border: none;
+                                   border-radius: 10px;
+                                   padding: 0.75rem;
+                                   font-weight: 600;">
+                        Generar Préstamo
+                    </button>
+                    <a href="{% url 'lista_prestamos' %}" class="btn btn-outline-secondary btn-lg"
+                       style="border-radius: 10px;">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

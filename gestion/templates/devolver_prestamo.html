@@ -1,0 +1,65 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="card" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: none;">
+        <div class="card-header text-white text-center py-4" 
+             style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+                    border-radius: 20px 20px 0 0;">
+            <h3 class="mb-0">📥 Devolver Libro</h3>
+        </div>
+        
+        <div class="card-body p-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="mb-4 p-3" style="background: #f8f9fa; border-radius: 10px;">
+                <h5>📚 {{ prestamo.libro.titulo }}</h5>
+                <p class="mb-1"><strong>Usuario:</strong> {{ prestamo.usuario_biblioteca.nombre }}</p>
+                <p class="mb-1"><strong>Fecha préstamo:</strong> {{ prestamo.fecha_prestamos|date:"d/m/Y" }}</p>
+                <p class="mb-0"><strong>Fecha máxima:</strong> {{ prestamo.fecha_max|date:"d/m/Y" }}</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label for="estado_libro" class="form-label fw-bold">📋 Estado del Libro</label>
+                    <select class="form-select" id="estado_libro" name="estado_libro" required
+                            style="border-radius: 10px; padding: 0.75rem;">
+                        <option value="bueno">✅ Buen Estado</option>
+                        <option value="danado">⚠️ Dañado (Multa: 50% del costo = ${{ prestamo.libro.costo|floatformat:2 }})</option>
+                        <option value="perdido">❌ Perdido (Multa: 200% del costo = ${{ prestamo.libro.costo|floatformat:2 }})</option>
+                    </select>
+                </div>
+
+                <div class="alert alert-warning" style="border-radius: 10px;">
+                    <small>
+                        ⚠️ <strong>Atención:</strong> Si hay retraso en la devolución, se aplicará una multa de <strong>$1 por día</strong>.
+                    </small>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-lg text-white"
+                            style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                                   border: none;
+                                   border-radius: 10px;
+                                   padding: 0.75rem;
+                                   font-weight: 600;">
+                        Confirmar Devolución
+                    </button>
+                    <a href="{% url 'detalle_prestamo' prestamo.id %}" class="btn btn-outline-secondary btn-lg"
+                       style="border-radius: 10px;">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

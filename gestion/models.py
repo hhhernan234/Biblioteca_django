@@ -59,13 +59,20 @@ class Prestamo(models.Model):
         ('d', 'Devuelto'),
     ]
 
+    ESTADOS_LIBRO = [  # ← AGREGAR ESTO
+        ('bueno', 'Buen Estado'),
+        ('danado', 'Dañado'),
+        ('perdido', 'Perdido'),
+    ]
+
     libro = models.ForeignKey(Libro, related_name ="prestamos", on_delete=models.PROTECT)
     usuario_biblioteca = models.ForeignKey('UsuarioBiblioteca', related_name='prestamos', 
                                        on_delete=models.PROTECT, null=True, blank=True)
     fecha_prestamos = models.DateField(default=timezone.now)
-    fecha_max = models.DateField()
+    fecha_max = models.DateField(null=True, blank=True)
     fecha_devolucion= models.DateField(blank=True, null=True)
     estado = models.CharField(max_length=1, choices=ESTADOS, default='b') 
+    estado_libro = models.CharField(max_length=10, choices=ESTADOS_LIBRO, default='bueno', blank=True) 
 
     class Meta:
         permissions = (
@@ -92,6 +99,122 @@ class Prestamo(models.Model):
         tarifa =0.50
         return self.dias_retraso * tarifa
     
+    def save(self, *args, **kwargs):
+        #Sobrescribe save para mantener compatibilidad
+        super().save(*args, **kwargs)
+    
+    def generar_prestamo(self):
+        #Activa el préstamo después de validaciones
+        from datetime import timedelta
+        
+        # Validación 1: Verificar que haya ejemplares disponibles
+        if self.libro.ejemplares_disponibles <= 0:
+            raise ValidationError(
+                f'No hay ejemplares disponibles de "{self.libro.titulo}". '
+                f'Todos están prestados.'
+            )
+        
+        # Validación 2: Solo se puede generar desde estado Borrador
+        if self.estado != 'b':
+            raise ValidationError('Solo se pueden generar préstamos en estado Borrador')
+        
+        # Validación 3: Debe tener usuario asignado
+        if not self.usuario_biblioteca:
+            raise ValidationError('Debe asignar un usuario de biblioteca antes de generar el préstamo')
+        
+        # Calcular fecha máxima (2 días desde hoy)
+        if not self.fecha_max:
+            self.fecha_max = timezone.now().date() + timedelta(days=2)
+        
+        # Cambiar estado a Prestado
+        self.estado = 'p'
+        
+        # Actualizar disponibilidad del libro si es el último ejemplar
+        if self.libro.ejemplares_disponibles == 1:
+            self.libro.disponible = False
+            self.libro.save()
+        
+        self.save()
+        return True
+    
+    def devolver_libro(self):
+        #Procesa la devolución del libro con generación automática de multas
+        from datetime import timedelta
+        
+        # Validación: Solo se pueden devolver préstamos Prestados o Multados
+        if self.estado not in ['p', 'm']:
+            raise ValidationError('Solo se pueden devolver préstamos en estado Prestado o Multado')
+        
+        fecha_actual = timezone.now().date()
+        self.fecha_devolucion = fecha_actual
+        
+        # 1. MULTA POR PÉRDIDA (tiene prioridad, cancela otras multas)
+        if self.estado_libro == 'perdido':
+            # Eliminar multas anteriores
+            self.multas.all().delete()
+            
+            # Crear multa por pérdida (200% del costo)
+            costo_perdida = float(self.libro.costo) * 2
+            Multa.objects.create(
+                prestamo=self,
+                tipo='p',
+                monto=costo_perdida,
+                fecha=fecha_actual
+            )
+            
+            self.estado = 'd'
+            self.save()
+            return f'Libro perdido registrado. Multa: ${costo_perdida:.2f}'
+        
+        # 2. MULTA POR DAÑO
+        if self.estado_libro == 'danado':
+            # Verificar si ya existe multa por daño
+            multa_dano = self.multas.filter(tipo='d').first()
+            if not multa_dano:
+                costo_dano = float(self.libro.costo) * 0.5
+                Multa.objects.create(
+                    prestamo=self,
+                    tipo='d',
+                    monto=costo_dano,
+                    fecha=fecha_actual
+                )
+        
+        # 3. MULTA POR RETRASO
+        if fecha_actual > self.fecha_max:
+            dias_retraso = (fecha_actual - self.fecha_max).days
+            
+            # Verificar si ya existe multa por retraso
+            multa_retraso = self.multas.filter(tipo='r').first()
+            if multa_retraso:
+                # Actualizar el monto
+                multa_retraso.monto = dias_retraso * 1.0
+                multa_retraso.save()
+            else:
+                # Crear nueva multa
+                Multa.objects.create(
+                    prestamo=self,
+                    tipo='r',
+                    monto=dias_retraso * 1.0,
+                    fecha=fecha_actual
+                )
+        
+        # Actualizar estado del préstamo
+        self.estado = 'd'
+        
+        # Restaurar disponibilidad del libro
+        self.libro.disponible = True
+        self.libro.save()
+        
+        self.save()
+        
+        # Calcular total de multas
+        total_multas = sum(float(m.monto) for m in self.multas.all())
+        
+        if total_multas > 0:
+            return f'Libro devuelto. Total multas: ${total_multas:.2f}'
+        else:
+            return 'Libro devuelto sin multas'
+    
 class Multa(models.Model):
     TIPOS = [
         ('r', 'Retraso'),
@@ -99,23 +222,17 @@ class Multa(models.Model):
         ('d', 'Deterioro'),
     ]
 
-    prestamo= models.ForeignKey(Prestamo, related_name="multas", on_delete=models.PROTECT)
-    tipo = models.CharField(max_length=10, choices= (('r', 'retraso'), ('p', 'perdida'), ('d', 'deterioro')))
-    monto= models. DecimalField(max_digits=3, decimal_places=2, default=0)
-    pagada= models.BooleanField(default= False)
+    prestamo = models.ForeignKey(Prestamo, related_name="multas", on_delete=models.PROTECT)
+    tipo = models.CharField(max_length=1, choices=TIPOS)
+    monto = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    pagada = models.BooleanField(default=False)
     fecha = models.DateField(default=timezone.now)
 
     class Meta:
         verbose_name_plural = "Multas"
 
     def __str__(self):
-        return f"Multa{self.tipo} - {self.monto} - {self.prestamo}"
-    
-
-    def save(self, *args, **kwargs):
-        if self.tipo == 'r' and self.monto == 0:
-            self.monto = monto =self.prestamo.multa_retraso
-        super().save(*args, **kwargs)
+        return f"Multa {self.get_tipo_display()} - ${self.monto} - {self.prestamo}"
 
     # ==================== VALIDADOR DE CÉDULA ====================
 def validar_cedula_ecuatoriana(cedula):

@@ -1,11 +1,135 @@
 {% extends "index.html" %}
 
 {% block contenido %}
-<h2>LIBROS</h2>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                         -webkit-background-clip: text;
+                         -webkit-text-fill-color: transparent;
+                         background-clip: text;
+                         font-weight: bold;">
+                📚 Biblioteca de Libros
+            </span>
+        </h2>
+        {% if user.is_authenticated %}
+        <a href="{% url 'crear_libro' %}" class="btn btn-primary" 
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  border: none;
+                  padding: 0.75rem 1.5rem;
+                  border-radius: 25px;
+                  font-weight: 500;
+                  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+            ➕ Agregar Libro
+        </a>
+        {% endif %}
+    </div>
 
-<ul> {% for libro in libros %}
-    <li> {{ libro.titulo}} {{libro.autor}} {{libros.disponible}}
-    </li>
-{% endfor %}
-</ul>
+    {% if libros %}
+    <div class="row g-4">
+        {% for libro in libros %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 libro-card" 
+                 style="border-radius: 15px;
+                        border: none;
+                        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                        transition: all 0.3s ease;
+                        overflow: hidden;">
+                
+                <!-- Header con gradiente -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            padding: 1.5rem;
+                            color: white;">
+                    <h5 class="card-title mb-2" style="font-weight: 600;">
+                        {{ libro.titulo }}
+                    </h5>
+                    <p class="mb-0" style="opacity: 0.9; font-size: 0.95rem;">
+                        ✍️ {{ libro.autor.nombre }} {{ libro.autor.apellido }}
+                    </p>
+                </div>
+
+                <!-- Cuerpo de la tarjeta -->
+                <div class="card-body" style="padding: 1.5rem;">
+                    <div class="info-row mb-2">
+                        <span class="badge" style="background: #e3f2fd; color: #1976d2; padding: 0.5rem 0.75rem; border-radius: 8px;">
+                            📖 {{ libro.ejemplares }} ejemplar{{ libro.ejemplares|pluralize:"es" }}
+                        </span>
+                        <span class="badge ms-2 {% if libro.disponible %}badge-disponible{% else %}badge-no-disponible{% endif %}">
+                            {% if libro.disponible %}✓ Disponible{% else %}✗ No disponible{% endif %}
+                        </span>
+                    </div>
+
+                    {% if libro.isbn %}
+                    <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+                        <strong>ISBN:</strong> {{ libro.isbn }}
+                    </p>
+                    {% endif %}
+
+                    {% if libro.paginas %}
+                    <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+                        <strong>Páginas:</strong> {{ libro.paginas }}
+                    </p>
+                    {% endif %}
+
+                    {% if libro.fecha_publicacion %}
+                    <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+                        <strong>Publicación:</strong> {{ libro.fecha_publicacion|date:"Y" }}
+                    </p>
+                    {% endif %}
+
+                    {% if libro.editorial %}
+                    <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+                        <strong>Editorial:</strong> {{ libro.editorial.nombre }}
+                    </p>
+                    {% endif %}
+
+                    <p class="mb-0" style="color: #666; font-size: 0.9rem;">
+                        <strong>Precio:</strong> 
+                        <span style="color: #667eea; font-weight: 600; font-size: 1.1rem;">
+                            ${{ libro.costo }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size: 4rem; opacity: 0.3;">📚</div>
+        <h4 class="mt-3" style="color: #666;">No hay libros registrados</h4>
+        <p style="color: #999;">Comienza agregando tu primer libro a la biblioteca</p>
+        {% if user.is_authenticated %}
+        <a href="{% url 'crear_libro' %}" class="btn btn-primary mt-3"
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  border: none;
+                  padding: 0.75rem 2rem;
+                  border-radius: 25px;">
+            ➕ Agregar Primer Libro
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .libro-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .badge-disponible {
+        background: #e8f5e9;
+        color: #2e7d32;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+    }
+
+    .badge-no-disponible {
+        background: #ffebee;
+        color: #c62828;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+    }
+</style>
 {% endblock %}

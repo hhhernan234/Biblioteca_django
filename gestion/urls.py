@@ -4,6 +4,9 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path("",index, name= "index"),
 
+    # Devolución
+    path('prestamos/<int:id>/devolver/', devolver_prestamo, name="devolver_prestamo"),
+
     #Class View
     path('libros_view/', LibroListView.as_view(), name= "libro_list"),
 

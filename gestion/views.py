@@ -12,6 +12,7 @@ from django.views.generic import ListView, CreateView, UpdateView,DeleteView, De
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 
 
 def index(request):
@@ -31,7 +32,7 @@ def crear_libro(request):
             autor = get_object_or_404(Autor, id=autor_id)
             Libro.objects.create(titulo=titulo, autor=autor)
             return redirect('lista_libros')
-    return render(request, 'gestion/templates/crear_libro.html', {'autores': autores})
+    return render(request, 'gestion/templates/crear_libros.html', {'autores': autores})
  
 def lista_autores(request):
     autores = Autor.objects.all()
@@ -70,25 +71,40 @@ def lista_prestamos(request):
 def crear_prestamo(request):
     if not request.user.has_perm('gestion.gestionar_prestamos'):
         return HttpResponseForbidden()
-    libro = Libro.objects.filter(disponible=True)
+    
+    libros = Libro.objects.all()  # Mostrar todos, luego validamos disponibilidad
     usuarios_biblioteca = UsuarioBiblioteca.objects.filter(activo=True)
+    
     if request.method == 'POST':
-        libro_id= request.POST.get('libro')
-        usuario_id = request.POST.get('usuario')
-        fecha_prestamo = request.POST.get('fecha_max')
-        if libro_id and usuario_id and fecha_prestamo:
-            libro = get_object_or_404(Libro, id= libro_id)
-            usuario = get_object_or_404(User, id= usuario_id)
-            prestamo = Prestamo.objects.create(libro= libro,
-                                               usuario= usuario,
-                                               fecha_max= fecha_prestamo)
-            libro.disponible = False
-            libro.save()
-            return redirect('detalle_prestamo', id= prestamo.id)
-    fecha = (timezone.now().date()).isoformat()
-    return render (request, 'gestion/templates/crear_prestamo.html', {'libros':libro,
-                                                                     'usuarios_biblioteca': usuarios_biblioteca,
-                                                                     'fecha': fecha})
+        libro_id = request.POST.get('libro')
+        usuario_biblioteca_id = request.POST.get('usuario_biblioteca')
+        
+        if libro_id and usuario_biblioteca_id:
+            libro = get_object_or_404(Libro, id=libro_id)
+            usuario_bib = get_object_or_404(UsuarioBiblioteca, id=usuario_biblioteca_id)
+            
+            try:
+                # Crear préstamo en estado Borrador
+                prestamo = Prestamo.objects.create(
+                    libro=libro,
+                    usuario_biblioteca=usuario_bib
+                )
+                
+                # Intentar generar el préstamo (activa validaciones)
+                prestamo.generar_prestamo()
+                
+                messages.success(request, f'Préstamo generado exitosamente. Devolver antes del {prestamo.fecha_max.strftime("%d/%m/%Y")}')
+                return redirect('detalle_prestamo', id=prestamo.id)
+                
+            except ValidationError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f'Error al crear préstamo: {str(e)}')
+    
+    return render(request, 'crear_prestamo.html', {
+        'libros': libros,
+        'usuarios_biblioteca': usuarios_biblioteca
+    })
         
 
 def detalle_prestamo(request, id):
@@ -177,3 +193,28 @@ def crear_usuario_biblioteca(request):
             messages.error(request, f'Error: {str(e)}')
     
     return render(request, 'gestion/templates/crear_usuario_biblioteca.html')
+
+@login_required
+def devolver_prestamo(request, id):
+    #Vista para procesar la devolución de un préstamo
+    prestamo = get_object_or_404(Prestamo, id=id)
+    
+    if request.method == 'POST':
+        estado_libro = request.POST.get('estado_libro', 'bueno')
+        
+        try:
+            # Actualizar estado del libro
+            prestamo.estado_libro = estado_libro
+            
+            # Procesar devolución
+            mensaje = prestamo.devolver_libro()
+            
+            messages.success(request, mensaje)
+            return redirect('detalle_prestamo', id=prestamo.id)
+            
+        except ValidationError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f'Error al devolver: {str(e)}')
+    
+    return render(request, 'devolver_prestamo.html', {'prestamo': prestamo})
