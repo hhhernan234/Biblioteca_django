@@ -13,7 +13,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
 
 def index(request):
     title = settings.TITLE
@@ -218,3 +220,65 @@ def devolver_prestamo(request, id):
             messages.error(request, f'Error al devolver: {str(e)}')
     
     return render(request, 'devolver_prestamo.html', {'prestamo': prestamo})
+
+@login_required
+def enviar_correo_multa(request, id):
+    #Envía correo de notificación de multa al usuario
+    prestamo = get_object_or_404(Prestamo, id=id)
+    
+    if not prestamo.usuario_biblioteca or not prestamo.usuario_biblioteca.email:
+        messages.error(request, 'El usuario no tiene email registrado')
+        return redirect('detalle_prestamo', id=prestamo.id)
+    
+    if not prestamo.multas.exists():
+        messages.error(request, 'Este préstamo no tiene multas')
+        return redirect('detalle_prestamo', id=prestamo.id)
+    
+    try:
+        # Calcular total de multas
+        total_multas = sum(float(m.monto) for m in prestamo.multas.all())
+        
+        # Preparar contexto para el template
+        context = {
+            'prestamo': prestamo,
+            'total_multas': total_multas,
+            'usuario': prestamo.usuario_biblioteca,
+            'libro': prestamo.libro,
+        }
+        
+        # Renderizar el mensaje
+        mensaje_html = render_to_string('email_multa.html', context)
+        mensaje_texto = f"""
+        Estimado/a {prestamo.usuario_biblioteca.nombre},
+        
+        Le informamos que tiene una multa pendiente por el préstamo del libro:
+        "{prestamo.libro.titulo}"
+        
+        Detalles:
+        - Fecha de préstamo: {prestamo.fecha_prestamos.strftime('%d/%m/%Y')}
+        - Fecha máxima de devolución: {prestamo.fecha_max.strftime('%d/%m/%Y')}
+        
+        Total de multas: ${total_multas:.2f}
+        
+        Por favor, devuelva el libro y pague la multa a la brevedad posible.
+        
+        Saludos,
+        Sistema de Biblioteca
+        """
+        
+        # Enviar correo
+        send_mail(
+            subject=f'Multa pendiente - Préstamo #{prestamo.id}',
+            message=mensaje_texto,
+            from_email=settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'biblioteca@example.com',
+            recipient_list=[prestamo.usuario_biblioteca.email],
+            html_message=mensaje_html,
+            fail_silently=False,
+        )
+        
+        messages.success(request, f'Correo enviado exitosamente a {prestamo.usuario_biblioteca.email}')
+        
+    except Exception as e:
+        messages.error(request, f'Error al enviar correo: {str(e)}')
+    
+    return redirect('detalle_prestamo', id=prestamo.id)

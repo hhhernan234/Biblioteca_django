@@ -4,6 +4,9 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path("",index, name= "index"),
 
+    # Notificaciones
+    path('prestamos/<int:id>/enviar-correo/', enviar_correo_multa, name="enviar_correo_multa"),
+
     # Devolución
     path('prestamos/<int:id>/devolver/', devolver_prestamo, name="devolver_prestamo"),
 

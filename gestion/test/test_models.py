@@ -5,6 +5,10 @@ from django.utils import timezone
 from django.urls import reverse
 from gestion.models import UsuarioBiblioteca, validar_cedula_ecuatoriana
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
+from io import StringIO
+
+
 class EditorialModelTest(TestCase):
     def setUp(self):
         self.editorial = Editorial.objects.create(
@@ -313,3 +317,75 @@ class DevolucionPrestamoTest(TestCase):
         
         self.libro.refresh_from_db()
         self.assertTrue(self.libro.disponible)
+
+class ComandoVerificarPrestamosTest(TestCase):
+    def setUp(self):
+        self.editorial = Editorial.objects.create(nombre="Test Editorial")
+        self.autor = Autor.objects.create(nombre="Test", apellido="Autor")
+        self.libro = Libro.objects.create(
+            titulo="Libro Test",
+            autor=self.autor,
+            editorial=self.editorial,
+            ejemplares=1,
+            costo=20.00
+        )
+        self.usuario_bib = UsuarioBiblioteca.objects.create(
+            nombre="Test User",
+            cedula="1714567890",
+            email="test@test.com"
+        )
+    
+    def test_comando_crea_multas_para_prestamos_vencidos(self):
+        """El comando debe crear multas para préstamos vencidos"""
+        from datetime import timedelta
+        
+        # Crear préstamo vencido
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib,
+            fecha_max=timezone.now().date() - timedelta(days=3),
+            estado='p'
+        )
+        
+        # Verificar que no tiene multas
+        self.assertEqual(prestamo.multas.count(), 0)
+        
+        # Ejecutar comando
+        out = StringIO()
+        call_command('verificar_prestamos_vencidos', stdout=out)
+        
+        # Verificar que se creó la multa
+        prestamo.refresh_from_db()
+        self.assertEqual(prestamo.multas.count(), 1)
+        self.assertEqual(prestamo.estado, 'm')  # Cambió a Multado
+        
+        # Verificar monto de la multa
+        multa = prestamo.multas.first()
+        self.assertEqual(float(multa.monto), 3.0)  # 3 días x $1
+    
+    def test_comando_actualiza_multas_existentes(self):
+        """El comando debe actualizar multas existentes"""
+        from datetime import timedelta
+        from gestion.models import Multa
+        
+        # Crear préstamo vencido con multa existente
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib,
+            fecha_max=timezone.now().date() - timedelta(days=5),
+            estado='p'
+        )
+        
+        # Crear multa con monto antiguo
+        multa = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='r',
+            monto=3.0
+        )
+        
+        # Ejecutar comando
+        call_command('verificar_prestamos_vencidos')
+        
+        # Verificar que se actualizó el monto
+        multa.refresh_from_db()
+        self.assertEqual(float(multa.monto), 5.0)  # 5 días x $1
