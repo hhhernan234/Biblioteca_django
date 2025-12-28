@@ -1,0 +1,116 @@
+{% extends "index.html" %}
+
+{% block contenido %}
+<div class="container mt-4">
+    <div class="card" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: none;">
+        <div class="card-header text-white text-center py-4" 
+             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 20px 20px 0 0;">
+            <h3 class="mb-0">🌐 Importar Libros desde OpenLibrary</h3>
+        </div>
+        
+        <div class="card-body p-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST" class="mb-4">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Buscar por:</label>
+                        <select name="buscar_por" class="form-select" style="border-radius: 10px; padding: 0.75rem;">
+                            <option value="titulo">Título</option>
+                            <option value="autor">Autor</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold">Texto de búsqueda:</label>
+                        <input type="text" name="texto_busqueda" class="form-control" 
+                               placeholder="Ej: Harry Potter, Gabriel García Márquez..."
+                               required style="border-radius: 10px; padding: 0.75rem;">
+                    </div>
+                    
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                       border: none;
+                                       border-radius: 10px;
+                                       padding: 0.75rem;
+                                       font-weight: 600;">
+                            🔍 Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {% if busqueda_realizada %}
+                {% if resultados %}
+                <h5 class="mb-3">📚 Resultados encontrados: {{ resultados|length }}</h5>
+                
+                <div class="row g-3">
+                    {% for libro in resultados %}
+                    <div class="col-md-6">
+                        <div class="card h-100" style="border-radius: 10px;">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ libro.title }}</h6>
+                                
+                                {% if libro.author_name %}
+                                <p class="mb-1 text-muted">
+                                    <strong>Autor:</strong> {{ libro.author_name.0 }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if libro.publisher %}
+                                <p class="mb-1 text-muted">
+                                    <strong>Editorial:</strong> {{ libro.publisher.0 }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if libro.first_publish_year %}
+                                <p class="mb-1 text-muted">
+                                    <strong>Año:</strong> {{ libro.first_publish_year }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if libro.isbn %}
+                                <p class="mb-2 text-muted">
+                                    <strong>ISBN:</strong> {{ libro.isbn.0 }}
+                                </p>
+                                {% endif %}
+
+                                <form method="POST" action="{% url 'importar_libro_sin_isbn' %}" style="margin-top: 0.5rem;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="titulo" value="{{ libro.title }}">
+                                    <input type="hidden" name="autor" value="{{ libro.author_name.0|default:'' }}">
+                                    <input type="hidden" name="isbn" value="{{ libro.isbn.0|default:'' }}">
+                                    <input type="hidden" name="editorial" value="{{ libro.publisher.0|default:'' }}">
+                                    <input type="hidden" name="anio" value="{{ libro.first_publish_year|default:'' }}">
+                                    <input type="hidden" name="paginas" value="{{ libro.number_of_pages_median|default:'' }}">
+                                    
+                                    <button type="submit" class="btn btn-sm btn-success w-100"
+                                            style="border-radius: 8px;">
+                                        ➕ Importar este libro
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No se encontraron resultados para tu búsqueda.
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

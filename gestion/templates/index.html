@@ -140,6 +140,12 @@
                         <a class="nav-link seccion_boton" data-seccion="seccion_libros" href="{% url 'lista_libros'%}">Libros</a>
                     </li>
 
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'importar_libros'%}">🌐 Importar Libros</a>
+                    </li>
+                    {% endif %}
+
                     <li class="nav-item">
                         <a class="nav-link seccion_boton" data-seccion="seccion_autores" href="{% url 'lista_autores'%}">Autores</a>
                     </li>

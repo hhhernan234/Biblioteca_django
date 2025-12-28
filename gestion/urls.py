@@ -4,6 +4,11 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path("",index, name= "index"),
 
+    # Importación
+    path('libros/importar/', importar_libros, name='importar_libros'),
+    path('libros/importar/<str:isbn>/', importar_libro_seleccionado, name='importar_libro_seleccionado'),
+    path('libros/importar-sin-isbn/', importar_libro_sin_isbn, name='importar_libro_sin_isbn'),
+
     # Notificaciones
     path('prestamos/<int:id>/enviar-correo/', enviar_correo_multa, name="enviar_correo_multa"),
 
@@ -35,6 +40,7 @@ urlpatterns = [
     path('prestamos/', lista_prestamos, name="lista_prestamos"),
     path('prestamos/nuevo/', crear_prestamo, name="crear_prestamo"),
     path('prestamos/<int:id>', detalle_prestamo, name="detalle_prestamo"),
+    path('prestamos/<int:id>/generar/', generar_prestamo, name="generar_prestamo"),
 
     #multas
     path('multas/', lista_multas, name="lista_multas"),

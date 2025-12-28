@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
-from .models import Autor, Libro, Prestamo, Multa, UsuarioBiblioteca
+from .models import Autor, Libro, Prestamo, Multa, UsuarioBiblioteca, Editorial
+import requests
 from django.http import HttpResponseForbidden
 from django.contrib.auth.models import User, Permission
 from django.contrib.auth.forms import UserCreationForm
@@ -16,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+
 
 def index(request):
     title = settings.TITLE
@@ -282,3 +284,189 @@ def enviar_correo_multa(request, id):
         messages.error(request, f'Error al enviar correo: {str(e)}')
     
     return redirect('detalle_prestamo', id=prestamo.id)
+
+import requests
+
+@login_required
+def importar_libros(request):
+    """Vista para buscar e importar libros desde OpenLibrary"""
+    resultados = []
+    busqueda_realizada = False
+    
+    if request.method == 'POST':
+        buscar_por = request.POST.get('buscar_por', 'titulo')
+        texto = request.POST.get('texto_busqueda', '').strip()
+        
+        if texto:
+            try:
+                # Construir URL según tipo de búsqueda
+                if buscar_por == 'titulo':
+                    url = f"https://openlibrary.org/search.json?title={texto}&limit=10"
+                else:
+                    url = f"https://openlibrary.org/search.json?author={texto}&limit=10"
+                
+                # Hacer petición
+                response = requests.get(url, timeout=10)
+                data = response.json()
+                
+                if data.get('docs'):
+                    resultados = data['docs'][:10]
+                    busqueda_realizada = True
+                else:
+                    messages.warning(request, 'No se encontraron resultados')
+                    
+            except Exception as e:
+                messages.error(request, f'Error al buscar: {str(e)}')
+    
+    return render(request, 'importar_libros.html', {
+        'resultados': resultados,
+        'busqueda_realizada': busqueda_realizada
+    })
+
+
+@login_required
+def importar_libro_seleccionado(request, isbn):
+    """Importa un libro específico desde OpenLibrary"""
+    try:
+        # Verificar si ya existe
+        if Libro.objects.filter(isbn=isbn).exists():
+            messages.warning(request, f'El libro con ISBN {isbn} ya existe en la biblioteca')
+            return redirect('importar_libros')
+        
+        # Buscar información del libro
+        url = f"https://openlibrary.org/search.json?isbn={isbn}"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        
+        if not data.get('docs'):
+            messages.error(request, 'No se encontró información del libro')
+            return redirect('importar_libros')
+        
+        doc = data['docs'][0]
+        
+        # Crear o buscar autor
+        autor = None
+        if doc.get('author_name'):
+            nombre_completo = doc['author_name'][0]
+            nombres = nombre_completo.split()
+            firstname = nombres[0]
+            lastname = ' '.join(nombres[1:]) if len(nombres) > 1 else ''
+            
+            autor, created = Autor.objects.get_or_create(
+                nombre=firstname,
+                apellido=lastname
+            )
+        
+        # Crear o buscar editorial
+        editorial = None
+        if doc.get('publisher'):
+            nombre_editorial = doc['publisher'][0]
+            editorial, created = Editorial.objects.get_or_create(
+                nombre=nombre_editorial
+            )
+        
+        # Crear el libro
+        libro = Libro.objects.create(
+            titulo=doc.get('title', 'Sin título')[:200],
+            autor=autor if autor else Autor.objects.first(),
+            editorial=editorial,
+            isbn=isbn,
+            paginas=doc.get('number_of_pages_median'),
+            fecha_publicacion=f"{doc['first_publish_year']}-01-01" if doc.get('first_publish_year') else None,
+            ejemplares=1,
+            costo=20.00,
+            disponible=True  # ← MUY IMPORTANTE
+        )
+        
+        messages.success(request, f'Libro "{libro.titulo}" importado exitosamente')
+        
+    except Exception as e:
+        messages.error(request, f'Error al importar: {str(e)}')
+    
+    return redirect('importar_libros')
+
+@login_required
+def importar_libro_sin_isbn(request):
+    """Importa un libro sin ISBN, usando el título como identificador"""
+    if request.method == 'POST':
+        try:
+            titulo = request.POST.get('titulo', 'Sin título')[:200]
+            autor_nombre = request.POST.get('autor', '')
+            isbn = request.POST.get('isbn', '') or None
+            editorial_nombre = request.POST.get('editorial', '')
+            anio = request.POST.get('anio', '')
+            paginas = request.POST.get('paginas', '')
+            
+            # Verificar si ya existe (por ISBN si tiene, sino por título)
+            if isbn:
+                if Libro.objects.filter(isbn=isbn).exists():
+                    messages.warning(request, f'El libro con ISBN {isbn} ya existe')
+                    return redirect('importar_libros')
+            else:
+                # Si no tiene ISBN, verificar por título exacto
+                if Libro.objects.filter(titulo__iexact=titulo).exists():
+                    messages.warning(request, f'El libro "{titulo}" ya existe en la biblioteca')
+                    return redirect('importar_libros')
+            
+            # Crear o buscar autor
+            autor = None
+            if autor_nombre:
+                nombres = autor_nombre.split()
+                firstname = nombres[0]
+                lastname = ' '.join(nombres[1:]) if len(nombres) > 1 else ''
+                
+                autor, created = Autor.objects.get_or_create(
+                    nombre=firstname,
+                    apellido=lastname
+                )
+            
+            # Crear o buscar editorial
+            editorial = None
+            if editorial_nombre:
+                editorial, created = Editorial.objects.get_or_create(
+                    nombre=editorial_nombre
+                )
+            
+            # Preparar fecha de publicación
+            fecha_pub = None
+            if anio:
+                try:
+                    fecha_pub = f"{anio}-01-01"
+                except:
+                    pass
+            
+            # Crear el libro
+            libro = Libro.objects.create(
+                titulo=titulo,
+                autor=autor if autor else Autor.objects.first(),
+                editorial=editorial,
+                isbn=isbn,
+                paginas=int(paginas) if paginas else None,
+                fecha_publicacion=fecha_pub,
+                ejemplares=1,
+                costo=20.00,
+                disponible=True
+            )
+            
+            messages.success(request, f'Libro "{libro.titulo}" importado exitosamente')
+            
+        except Exception as e:
+            messages.error(request, f'Error al importar: {str(e)}')
+    
+    return redirect('importar_libros')
+ 
+@login_required
+def generar_prestamo(request, id):
+    prestamo = get_object_or_404(Prestamo, id=id)
+    
+    try:
+        # El método generar_prestamo() YA cambia el estado y guarda
+        prestamo.generar_prestamo()
+        
+        messages.success(request, f"✅ Préstamo {prestamo.codigo} generado exitosamente.")
+    except ValidationError as e:
+        messages.error(request, str(e))
+    except Exception as e:
+        messages.error(request, f"Error inesperado: {str(e)}")
+    
+    return redirect('detalle_prestamo', id=id)

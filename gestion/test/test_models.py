@@ -1,5 +1,5 @@
 from django.test import TestCase
-from gestion.models import Autor, Libro, Prestamo, Editorial
+from gestion.models import Autor, Libro, Prestamo, Editorial, Multa
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
@@ -389,3 +389,157 @@ class ComandoVerificarPrestamosTest(TestCase):
         # Verificar que se actualizó el monto
         multa.refresh_from_db()
         self.assertEqual(float(multa.monto), 5.0)  # 5 días x $1
+
+class ImportacionLibrosTest(TestCase):
+    def setUp(self):
+        self.editorial = Editorial.objects.create(nombre="Test Editorial")
+        self.autor = Autor.objects.create(nombre="Test", apellido="Autor")
+    
+    def test_no_duplicar_libros_por_isbn(self):
+        """No debe permitir importar libros con ISBN duplicado"""
+        # Crear libro existente
+        Libro.objects.create(
+            titulo="Libro Existente",
+            autor=self.autor,
+            isbn="9780439139595"
+        )
+        
+        # Verificar que existe
+        self.assertTrue(Libro.objects.filter(isbn="9780439139595").exists())
+        
+        # Intentar crear otro con mismo ISBN debe fallar o ser bloqueado
+        with self.assertRaises(Exception):
+            Libro.objects.create(
+                titulo="Libro Duplicado",
+                autor=self.autor,
+                isbn="9780439139595"
+            )
+class CodigosSecuencialesTest(TestCase):
+    def setUp(self):
+        self.editorial = Editorial.objects.create(nombre="Test Editorial")
+        self.autor = Autor.objects.create(nombre="Test", apellido="Autor")
+        self.libro = Libro.objects.create(
+            titulo="Libro Test",
+            autor=self.autor,
+            editorial=self.editorial,
+            ejemplares=3,
+            costo=20.00
+        )
+        self.usuario_bib = UsuarioBiblioteca.objects.create(
+            nombre="Test User",
+            cedula="1714567890",
+            email="test@test.com"
+        )
+    
+    def test_prestamo_genera_codigo_automatico(self):
+        """El préstamo debe generar código automáticamente"""
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        self.assertIsNotNone(prestamo.codigo)
+        self.assertTrue(prestamo.codigo.startswith('BLB-'))
+        self.assertEqual(prestamo.codigo, 'BLB-001')
+    
+    def test_prestamos_secuenciales(self):
+        """Los préstamos deben tener códigos secuenciales"""
+        prestamo1 = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        prestamo2 = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        prestamo3 = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        self.assertEqual(prestamo1.codigo, 'BLB-001')
+        self.assertEqual(prestamo2.codigo, 'BLB-002')
+        self.assertEqual(prestamo3.codigo, 'BLB-003')
+    
+    def test_codigo_unico_prestamo(self):
+        """No debe permitir códigos duplicados"""
+        Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        # Intentar crear otro préstamo (debe tener código diferente)
+        prestamo2 = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        # Los códigos deben ser diferentes
+        prestamos = Prestamo.objects.all()
+        codigos = [p.codigo for p in prestamos]
+        self.assertEqual(len(codigos), len(set(codigos)))  # No hay duplicados
+    
+    def test_multa_genera_codigo_automatico(self):
+        """La multa debe generar código automáticamente"""
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        multa = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='r',
+            monto=5.00
+        )
+        
+        self.assertIsNotNone(multa.codigo)
+        self.assertTrue(multa.codigo.startswith('MLT-'))
+        self.assertEqual(multa.codigo, 'MLT-001')
+    
+    def test_multas_secuenciales(self):
+        """Las multas deben tener códigos secuenciales"""
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        multa1 = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='r',
+            monto=3.00
+        )
+        
+        multa2 = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='d',
+            monto=10.00
+        )
+        
+        multa3 = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='p',
+            monto=40.00
+        )
+        
+        self.assertEqual(multa1.codigo, 'MLT-001')
+        self.assertEqual(multa2.codigo, 'MLT-002')
+        self.assertEqual(multa3.codigo, 'MLT-003')
+    
+    def test_str_incluye_codigo(self):
+        """El __str__ debe incluir el código"""
+        prestamo = Prestamo.objects.create(
+            libro=self.libro,
+            usuario_biblioteca=self.usuario_bib
+        )
+        
+        self.assertIn('BLB-', str(prestamo))
+        
+        multa = Multa.objects.create(
+            prestamo=prestamo,
+            tipo='r',
+            monto=5.00
+        )
+        
+        self.assertIn('MLT-', str(multa))

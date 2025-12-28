@@ -1,203 +1,108 @@
 {% extends "index.html" %}
 
 {% block contenido %}
-<div class="multas-container">
-    <div class="header">
-        <h2>Multas</h2>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">💰 Lista de Multas</h2>
     </div>
 
     {% if multas %}
     <div class="multas-lista">
         {% for multa in multas %}
-        <div class="multa-card {% if multa.pagada %}pagada{% endif %}">
-            <div class="multa-info">
-                <h3>📚 {{ multa.prestamo.libro.titulo }}
-                    {% if multa.prestamo.usuario_biblioteca %}
-                        - {{ multa.prestamo.usuario_biblioteca.nombre }}
-                    {% else %}
-                        - <span style="color: #dc3545;">Sin usuario asignado</span>
-                    {% endif %}
-                </h3>
-                <div class="detalles">
-                    <span class="tipo tipo-{{ multa.tipo }}">
-                        {% if multa.tipo == 'r' %}Retraso
-                        {% elif multa.tipo == 'p' %}Pérdida
-                        {% elif multa.tipo == 'd' %}Deterioro
+        <div class="multa-card {% if multa.pagada %}multa-pagada{% else %}multa-pendiente{% endif %}"
+             style="background: white; 
+                    border: 1px solid #e1e8ed; 
+                    border-radius: 12px; 
+                    padding: 1.5rem; 
+                    margin-bottom: 1rem;
+                    transition: all 0.3s;">
+            
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="multa-header">
+                    <h5 class="mb-1" style="color: #667eea; font-weight: 600;">{{ multa.codigo }}</h5>
+                    <span class="badge 
+                        {% if multa.tipo == 'r' %}bg-warning text-dark
+                        {% elif multa.tipo == 'p' %}bg-danger
+                        {% else %}bg-info{% endif %}"
+                        style="padding: 0.5rem 0.75rem;">
+                        {% if multa.tipo == 'r' %}🕐 Retraso
+                        {% elif multa.tipo == 'p' %}❌ Pérdida
+                        {% elif multa.tipo == 'd' %}⚠️ Deterioro
                         {% endif %}
                     </span>
-                    <span class="fecha">{{ multa.fecha }}</span>
                 </div>
-            </div>
-            <div class="multa-estado">
-                <div class="monto">${{ multa.monto }}</div>
-                <div class="estado">
+                <div class="text-end">
+                    <h4 class="mb-1" style="color: #667eea; font-weight: 600;">${{ multa.monto }}</h4>
                     {% if multa.pagada %}
-                        <span class="badge pagada">✓ Pagada</span>
+                        <span class="badge bg-success">✓ Pagada</span>
                     {% else %}
-                        <span class="badge pendiente">Pendiente</span>
+                        <span class="badge bg-danger">Pendiente</span>
                     {% endif %}
                 </div>
+            </div>
+            
+            <div class="multa-body">
+                <p class="mb-2">
+                    <strong>📋 Préstamo:</strong> 
+                    <a href="{% url 'detalle_prestamo' multa.prestamo.id %}" 
+                       style="color: #667eea; text-decoration: none;">
+                        {{ multa.prestamo.codigo }}
+                    </a>
+                </p>
+                <p class="mb-2">
+                    <strong>📚 Libro:</strong> {{ multa.prestamo.libro.titulo }}
+                </p>
+                <p class="mb-2">
+                    <strong>👤 Usuario:</strong> 
+                    {% if multa.prestamo.usuario_biblioteca %}
+                        {{ multa.prestamo.usuario_biblioteca.nombre }}
+                    {% else %}
+                        <span class="text-danger">Sin usuario asignado</span>
+                    {% endif %}
+                </p>
+                <p class="mb-0">
+                    <strong>📅 Fecha:</strong> {{ multa.fecha|date:"d/m/Y" }}
+                </p>
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-        <p>No hay multas registradas</p>
+    <div class="text-center py-5">
+        <div style="font-size: 4rem; opacity: 0.3;">💰</div>
+        <h4 class="mt-3" style="color: #666;">No hay multas registradas</h4>
+        <p style="color: #999;">Las multas aparecerán aquí cuando se devuelvan libros con retraso o daños</p>
     </div>
     {% endif %}
 </div>
 
 <style>
-    .multas-container {
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-    }
-
-    .header {
-        margin-bottom: 1.5rem;
-    }
-
-    .header h2 {
-        margin: 0;
-        color: #333;
-    }
-
-    .multas-lista {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .multa-card {
-        background: white;
-        border: 1px solid #e1e8ed;
-        border-left: 4px solid #dc3545;
-        border-radius: 8px;
-        padding: 1.25rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: box-shadow 0.3s;
-    }
-
-    .multa-card.pagada {
-        border-left-color: #28a745;
-        opacity: 0.7;
-    }
-
     .multa-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
     }
-
-    .multa-info {
-        flex: 1;
+    
+    .multa-pagada {
+        border-left: 4px solid #28a745 !important;
+        opacity: 0.85;
     }
-
-    .multa-info h3 {
-        margin: 0 0 0.5rem 0;
-        color: #333;
-        font-size: 1.05rem;
+    
+    .multa-pendiente {
+        border-left: 4px solid #dc3545 !important;
     }
-
-    .detalles {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
+    
+    .multa-card a:hover {
+        text-decoration: underline !important;
     }
-
-    .tipo {
-        padding: 0.25rem 0.75rem;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .tipo-r {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .tipo-p {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
-    .tipo-d {
-        background: #d1ecf1;
-        color: #0c5460;
-    }
-
-    .fecha {
-        color: #666;
-        font-size: 0.9rem;
-    }
-
-    .multa-estado {
-        text-align: right;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: flex-end;
-    }
-
-    .monto {
-        font-size: 1.5rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .badge {
-        padding: 0.35rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .badge.pagada {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .badge.pendiente {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        background: white;
-        border-radius: 8px;
-        border: 1px solid #e1e8ed;
-    }
-
-    .empty-state p {
-        color: #666;
-        margin: 0;
-    }
-
-    @media (max-width: 600px) {
-        .multa-card {
+    
+    @media (max-width: 768px) {
+        .multa-card .d-flex {
             flex-direction: column;
-            align-items: stretch;
             gap: 1rem;
         }
-
-        .multa-estado {
-            align-items: stretch;
-        }
-
-        .monto {
-            text-align: left;
-        }
-
-        .badge {
-            text-align: center;
+        
+        .text-end {
+            text-align: left !important;
         }
     }
 </style>

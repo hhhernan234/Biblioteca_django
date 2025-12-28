@@ -64,7 +64,8 @@ class Prestamo(models.Model):
         ('danado', 'Dañado'),
         ('perdido', 'Perdido'),
     ]
-
+    
+    codigo = models.CharField(max_length=20, unique=True, blank=True, editable=False)
     libro = models.ForeignKey(Libro, related_name ="prestamos", on_delete=models.PROTECT)
     usuario_biblioteca = models.ForeignKey('UsuarioBiblioteca', related_name='prestamos', 
                                        on_delete=models.PROTECT, null=True, blank=True)
@@ -83,7 +84,7 @@ class Prestamo(models.Model):
     
     def __str__(self):
         usuario_nombre = self.usuario_biblioteca.nombre if self.usuario_biblioteca else "Sin usuario"
-        return f"{self.libro.titulo} - {usuario_nombre}"
+        return f"{self.codigo} - {self.libro.titulo} - {usuario_nombre}"
     
     @property
     def dias_retraso(self):
@@ -100,41 +101,60 @@ class Prestamo(models.Model):
         return self.dias_retraso * tarifa
     
     def save(self, *args, **kwargs):
-        #Sobrescribe save para mantener compatibilidad
+        #Genera código secuencial al crear el préstamo
+        if not self.pk and not self.codigo:  # Solo al crear
+            # Obtener el último código
+            ultimo_prestamo = Prestamo.objects.order_by('-id').first()
+            
+            if ultimo_prestamo and ultimo_prestamo.codigo:
+                # Extraer el número del último código (BLB-001 -> 1)
+                try:
+                    ultimo_num = int(ultimo_prestamo.codigo.split('-')[1])
+                    nuevo_num = ultimo_num + 1
+                except (IndexError, ValueError):
+                    nuevo_num = 1
+            else:
+                nuevo_num = 1
+            
+            # Generar nuevo código con formato BLB-XXX
+            self.codigo = f"BLB-{nuevo_num:03d}"
+        
         super().save(*args, **kwargs)
     
     def generar_prestamo(self):
-        #Activa el préstamo después de validaciones
+        """Activa el préstamo después de validaciones"""
         from datetime import timedelta
         
-        # Validación 1: Verificar que haya ejemplares disponibles
+        # Validación 0: Solo se puede generar desde estado Borrador
+        if self.estado != 'b':
+            raise ValidationError(
+                f'Este préstamo ya fue generado. Estado actual: {self.get_estado_display()}'
+            )
+        
+        # Validación 1: Debe tener usuario asignado
+        if not self.usuario_biblioteca:
+            raise ValidationError('Debe asignar un usuario de biblioteca antes de generar el préstamo')
+        
+        # Validación 2: Verificar que haya ejemplares disponibles
         if self.libro.ejemplares_disponibles <= 0:
             raise ValidationError(
                 f'No hay ejemplares disponibles de "{self.libro.titulo}". '
                 f'Todos están prestados.'
             )
         
-        # Validación 2: Solo se puede generar desde estado Borrador
-        if self.estado != 'b':
-            raise ValidationError('Solo se pueden generar préstamos en estado Borrador')
-        
-        # Validación 3: Debe tener usuario asignado
-        if not self.usuario_biblioteca:
-            raise ValidationError('Debe asignar un usuario de biblioteca antes de generar el préstamo')
-        
         # Calcular fecha máxima (2 días desde hoy)
         if not self.fecha_max:
             self.fecha_max = timezone.now().date() + timedelta(days=2)
         
         # Cambiar estado a Prestado
-        self.estado = 'p'
+        self.estado = 'p'  # ← ASEGÚRATE QUE ESTÉ AQUÍ
         
         # Actualizar disponibilidad del libro si es el último ejemplar
         if self.libro.ejemplares_disponibles == 1:
             self.libro.disponible = False
             self.libro.save()
         
-        self.save()
+        self.save()  # ← ESTA LÍNEA ES CRÍTICA
         return True
     
     def devolver_libro(self):
@@ -222,6 +242,7 @@ class Multa(models.Model):
         ('d', 'Deterioro'),
     ]
 
+    codigo = models.CharField(max_length=20, unique=True, blank=True, editable=False)
     prestamo = models.ForeignKey(Prestamo, related_name="multas", on_delete=models.PROTECT)
     tipo = models.CharField(max_length=1, choices=TIPOS)
     monto = models.DecimalField(max_digits=6, decimal_places=2, default=0)
@@ -231,8 +252,29 @@ class Multa(models.Model):
     class Meta:
         verbose_name_plural = "Multas"
 
+    def save(self, *args, **kwargs):
+        """Genera código secuencial al crear la multa"""
+        if not self.pk and not self.codigo:  # Solo al crear
+            # Obtener el último código
+            ultima_multa = Multa.objects.order_by('-id').first()
+            
+            if ultima_multa and ultima_multa.codigo:
+                # Extraer el número del último código (MLT-001 -> 1)
+                try:
+                    ultimo_num = int(ultima_multa.codigo.split('-')[1])
+                    nuevo_num = ultimo_num + 1
+                except (IndexError, ValueError):
+                    nuevo_num = 1
+            else:
+                nuevo_num = 1
+            
+            # Generar nuevo código con formato MLT-XXX
+            self.codigo = f"MLT-{nuevo_num:03d}"
+        
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Multa {self.get_tipo_display()} - ${self.monto} - {self.prestamo}"
+        return f"{self.codigo} - Multa {self.get_tipo_display()} - ${self.monto}"
 
     # ==================== VALIDADOR DE CÉDULA ====================
 def validar_cedula_ecuatoriana(cedula):

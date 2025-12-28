@@ -5,9 +5,12 @@
     <div class="card" style="border-radius: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: none;">
         <!-- Header -->
         <div class="card-header text-white py-4" 
-             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     border-radius: 20px 20px 0 0;">
-            <h3 class="mb-0">📚 Detalle del Préstamo</h3>
+            <h3 class="mb-0">📚 Préstamo {{ prestamo.codigo }}</h3>
+            <p class="mb-0 mt-1" style="opacity: 0.9; font-size: 0.95rem;">
+                {{ prestamo.get_estado_display }}
+            </p>
         </div>
         
         <div class="card-body p-4">
@@ -60,19 +63,48 @@
             {% endif %}
 
             <!-- Botón de Devolver (solo si está prestado o multado) -->
-            {% if prestamo.estado in 'pm' and user.is_authenticated %}
-            <div class="d-grid mb-4">
-                <a href="{% url 'devolver_prestamo' prestamo.id %}" 
-                   class="btn btn-lg text-white"
-                   style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                          border: none;
-                          border-radius: 10px;
-                          padding: 0.75rem;
-                          font-weight: 600;
-                          box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
-                    📥 Devolver Libro
-                </a>
-            </div>
+            <!-- Acciones según el estado -->
+            {% if user.is_authenticated %}
+                
+                <!-- Botón Generar Préstamo (solo en estado Borrador) -->
+                {% if prestamo.estado == 'b' %}
+                <div class="d-grid mb-4">
+                    <a href="{% url 'generar_prestamo' prestamo.id %}" 
+                       class="btn btn-lg text-white"
+                       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                              border: none;
+                              border-radius: 10px;
+                              padding: 0.75rem;
+                              font-weight: 600;
+                              box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);"
+                       onclick="return confirm('¿Confirmas que deseas generar este préstamo?')">
+                        ✅ Generar Préstamo
+                    </a>
+                </div>
+                
+                <!-- Botón Devolver (solo si está prestado o multado) -->
+                {% elif prestamo.estado in 'pm' %}
+                <div class="d-grid mb-4">
+                    <a href="{% url 'devolver_prestamo' prestamo.id %}" 
+                       class="btn btn-lg text-white"
+                       style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                              border: none;
+                              border-radius: 10px;
+                              padding: 0.75rem;
+                              font-weight: 600;
+                              box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
+                        📥 Devolver Libro
+                    </a>
+                </div>
+                
+                <!-- Badge informativo (si está devuelto) -->
+                {% elif prestamo.estado == 'd' %}
+                <div class="alert alert-success text-center" style="border-radius: 10px; padding: 1rem;">
+                    <h5 class="mb-0">✅ Préstamo Completado</h5>
+                    <small>Este préstamo ya fue devuelto</small>
+                </div>
+                {% endif %}
+                
             {% endif %}
 
             <!-- Multas -->
@@ -91,9 +123,10 @@
             
             {% for multa in prestamo.multas.all %}
             <div class="alert {% if multa.pagada %}alert-success{% else %}alert-warning{% endif %} d-flex justify-content-between align-items-center"
-                 style="border-radius: 10px;">
+                style="border-radius: 10px;">
                 <div>
                     <strong>
+                        {{ multa.codigo }} - 
                         {% if multa.tipo == 'r' %}🕐 Retraso
                         {% elif multa.tipo == 'p' %}❌ Pérdida
                         {% elif multa.tipo == 'd' %}⚠️ Deterioro

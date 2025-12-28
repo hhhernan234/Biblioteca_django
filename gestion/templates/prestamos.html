@@ -2,47 +2,89 @@
 
 {% block contenido %}
 <div class="container mt-4">
-    <h2>📚 Préstamos</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📋 Lista de Préstamos</h2>
+        {% if user.is_authenticated %}
+        <a href="{% url 'crear_prestamo' %}" class="btn btn-primary" 
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  border: none;
+                  padding: 0.75rem 1.5rem;
+                  border-radius: 25px;">
+            ➕ Nuevo Préstamo
+        </a>
+        {% endif %}
+    </div>
 
     {% if prestamos %}
-    <div class="list-group mt-3">
-        {% for prestamo in prestamos %}
-        <div class="list-group-item">
-            <h5>{{ prestamo.libro.titulo }}</h5>
-            <p class="mb-1">
-                <strong>Usuario:</strong> 
-                {% if prestamo.usuario_biblioteca %}
-                    {{ prestamo.usuario_biblioteca.nombre }}
-                {% else %}
-                    <span class="text-danger">Sin usuario asignado</span>
-                {% endif %}
-            </p>
-            <p class="mb-1">
-                <strong>Fecha préstamo:</strong> {{ prestamo.fecha_prestamos|date:"d/m/Y" }}
-            </p>
-            <p class="mb-1">
-                <strong>Fecha máxima:</strong> {{ prestamo.fecha_max|date:"d/m/Y" }}
-            </p>
-            <p class="mb-1">
-                <strong>Fecha devolución:</strong> 
-                {% if prestamo.fecha_devolucion %}
-                    {{ prestamo.fecha_devolucion|date:"d/m/Y" }}
-                {% else %}
-                    <span class="text-warning">Pendiente</span>
-                {% endif %}
-            </p>
-            <p class="mb-0">
-                <strong>Estado:</strong> 
-                <span class="badge bg-{% if prestamo.estado == 'p' %}primary{% elif prestamo.estado == 'm' %}danger{% elif prestamo.estado == 'd' %}success{% else %}secondary{% endif %}">
-                    {{ prestamo.get_estado_display }}
-                </span>
-            </p>
+    <div class="card" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th class="px-4 py-3">Código</th>
+                            <th class="py-3">Libro</th>
+                            <th class="py-3">Usuario</th>
+                            <th class="py-3">Fecha Préstamo</th>
+                            <th class="py-3">Fecha Máxima</th>
+                            <th class="py-3">Estado</th>
+                            <th class="py-3">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td class="px-4 py-3">
+                                <strong style="color: #667eea;">{{ prestamo.codigo }}</strong>
+                            </td>
+                            <td class="py-3">{{ prestamo.libro.titulo }}</td>
+                            <td class="py-3">
+                                {% if prestamo.usuario_biblioteca %}
+                                    {{ prestamo.usuario_biblioteca.nombre }}
+                                {% else %}
+                                    <span class="text-danger">Sin usuario</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">{{ prestamo.fecha_prestamos|date:"d/m/Y" }}</td>
+                            <td class="py-3">{{ prestamo.fecha_max|date:"d/m/Y" }}</td>
+                            <td class="py-3">
+                                <span class="badge 
+                                    {% if prestamo.estado == 'b' %}bg-secondary
+                                    {% elif prestamo.estado == 'p' %}bg-primary
+                                    {% elif prestamo.estado == 'm' %}bg-danger
+                                    {% else %}bg-success{% endif %}"
+                                    style="padding: 0.5rem 0.75rem;">
+                                    {{ prestamo.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="py-3">
+                                <a href="{% url 'detalle_prestamo' prestamo.id %}" 
+                                   class="btn btn-sm btn-info"
+                                   style="border-radius: 6px;">
+                                    👁️ Ver Detalle
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-        {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info mt-3">
-        No hay préstamos registrados
+    <div class="text-center py-5">
+        <div style="font-size: 4rem; opacity: 0.3;">📋</div>
+        <h4 class="mt-3" style="color: #666;">No hay préstamos registrados</h4>
+        <p style="color: #999;">Comienza creando el primer préstamo</p>
+        {% if user.is_authenticated %}
+        <a href="{% url 'crear_prestamo' %}" class="btn btn-primary mt-3"
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  border: none;
+                  padding: 0.75rem 2rem;
+                  border-radius: 25px;">
+            ➕ Crear Primer Préstamo
+        </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

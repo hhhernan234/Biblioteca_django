@@ -30,20 +30,16 @@ class LibroAdmin(admin.ModelAdmin):
     search_fields = ['titulo', 'isbn']
     list_filter = ['editorial', 'autor']
 
-@admin.register(Multa)
-class MultaAdmin(admin.ModelAdmin):
-    list_display = ['prestamo', 'tipo', 'monto', 'pagada', 'fecha']
-    list_filter = ['tipo', 'pagada']
-
 @admin.register(Prestamo)
 class PrestamoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'libro', 'usuario_biblioteca', 'fecha_prestamos', 'fecha_max', 'estado']
+    list_display = ['codigo', 'libro', 'usuario_biblioteca', 'fecha_prestamos', 'fecha_max', 'estado']
     list_filter = ['estado', 'fecha_prestamos']
-    search_fields = ['libro__titulo', 'usuario_biblioteca__nombre', 'usuario_biblioteca__cedula']
+    search_fields = ['codigo', 'libro__titulo', 'usuario_biblioteca__nombre', 'usuario_biblioteca__cedula']
+    readonly_fields = ['codigo']
     actions = ['generar_prestamos_seleccionados']
     
     def generar_prestamos_seleccionados(self, request, queryset):
-        #Acción masiva para generar préstamos
+        """Acción masiva para generar préstamos"""
         generados = 0
         errores = []
         
@@ -53,7 +49,7 @@ class PrestamoAdmin(admin.ModelAdmin):
                     prestamo.generar_prestamo()
                     generados += 1
             except Exception as e:
-                errores.append(f"Préstamo {prestamo.id}: {str(e)}")
+                errores.append(f"Préstamo {prestamo.codigo}: {str(e)}")
         
         if generados > 0:
             self.message_user(request, f'{generados} préstamo(s) generado(s) exitosamente')
@@ -61,3 +57,11 @@ class PrestamoAdmin(admin.ModelAdmin):
             self.message_user(request, f'Errores: {"; ".join(errores)}', level='error')
     
     generar_prestamos_seleccionados.short_description = "Generar préstamos seleccionados"
+
+
+@admin.register(Multa)
+class MultaAdmin(admin.ModelAdmin):
+    list_display = ['codigo', 'prestamo', 'tipo', 'monto', 'pagada', 'fecha']
+    list_filter = ['tipo', 'pagada']
+    readonly_fields = ['codigo']
+    search_fields = ['codigo', 'prestamo__codigo']
